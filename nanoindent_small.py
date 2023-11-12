@@ -75,13 +75,13 @@ def processing(img, folder_name, data_root_path):
 
     """
     N_ROWS=9
-    parts = 2
+    PARTS = 2
     
     try:
         filtered_centers1_original = ip.find_origin_start(img)
         filtered_centers_last_original = ip.find_origin_last(img)
         filtered_centers_m_original = [0,0]
-        grid_manual = ip.manual_grid(filtered_centers_m_original,filtered_centers1_original, filtered_centers_last_original,N_ROWS,parts)
+        grid_manual = ip.manual_grid(filtered_centers_m_original,filtered_centers1_original, filtered_centers_last_original,N_ROWS,PARTS)
 
         grid_w_real_points = ip.create_new_grid(img, grid_manual)
 
@@ -99,7 +99,7 @@ def processing(img, folder_name, data_root_path):
         else:
             average_distance = ip.calculate_average_vertical_distance(grid_remove_points,N_ROWS = 9)
 
-            grid_final = ip.add_points_parts(average_distance, grid_remove_points,N_ROWS,parts)
+            grid_final = ip.add_points_parts(average_distance, grid_remove_points,N_ROWS,PARTS)
             save_pics(grid_final, img, folder_name, data_root_path)
             # Write the results to Excel files
             ip.calculate_distance_and_save_small(grid_final, folder_name, data_root_path)

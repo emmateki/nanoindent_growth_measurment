@@ -11,6 +11,19 @@ AVERAGE_DISTANCE_VERTICAL = 302  # set by previous observation
 COLUMN_DISTANCE = [300.52, 300.55]
 POINT_DISTANCE = [302.14, 302.1, 302.14]
 
+"""
+Credit to Jaroslav Knotek for the following functions:
+- _subtract_background
+- _get_component_centers
+- _segment_indents
+- norm
+- _get_diamond
+- _get_heatmap_height
+- _calculate_candidates_heatmap
+- _suppress_non_grid_artifacts
+
+"""
+
 def get_indent_mask(img, threshold_h, threshold_l, close_size=41):
     # Apply preprocessing to highlight indents
     img_highlight = _suppress_non_grid_artifacts(img, threshold_h)
@@ -203,8 +216,8 @@ def process_grid(rearranged_grid, X_THRESHOLD, X1_THRESHOLD, N_ROWS, PARTS):
     return rearranged_grid
 
 
-def get_coordinates(grid, part, col, n_rows, parts):
-    if parts == 2:
+def get_coordinates(grid, part, col, n_rows, PARTS):
+    if PARTS == 2:
         part = 1
     row_start = part * n_rows
     row_end = row_start + n_rows
@@ -693,7 +706,7 @@ def empty_grid(grid_final, N_ROWS):
 
 def add_points_parts(average_distance, new_grid1, N_ROWS,parts):
     """
-    Add missing points to the grid and adjust their positions based on given criteria-linear dependency .
+    Add missing points to the grid parts and adjust their positions based on given criteria-linear dependency .
 
     Parameters:
     - average_distance: The average vertical distance between neighboring points.

@@ -75,7 +75,7 @@ def processing(img, folder_name, data_root_path):
         data_root_path: Path to the root data directory.
     """
     N_ROWS=11
-    parts = 3
+    PARTS = 3
     
     try:
         filtered_centers1_original = ip.find_origin_start(img)
@@ -83,7 +83,7 @@ def processing(img, folder_name, data_root_path):
         filtered_centers_m_original = ip.find_origin_middle(img)
         N_ROWS = N_ROWS 
         grid_manual = ip.manual_grid(
-            filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original,N_ROWS, parts) 
+            filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original,N_ROWS, PARTS) 
         
         grid_w_real_points = ip.create_new_grid(img, grid_manual)
         
@@ -104,7 +104,7 @@ def processing(img, folder_name, data_root_path):
                 grid_remove_points, N_ROWS)
 
             grid_final = ip.add_points_parts(
-                average_distance, grid_remove_points, N_ROWS,parts)
+                average_distance, grid_remove_points, N_ROWS,PARTS)
 
             grid_bigger_empty = ip.empty_grid(grid_final, N_ROWS)
 
