@@ -6,7 +6,8 @@ import os
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
-AVERAGE_DISTANCE_VERTICAL = 302  # set by previous observation
+# set by previous observation
+AVERAGE_DISTANCE_VERTICAL = 302  
 # Given distances between columns and points
 COLUMN_DISTANCE = [300.52, 300.55]
 POINT_DISTANCE = [302.14, 302.1, 302.14]
@@ -306,7 +307,7 @@ def calculate_distance_and_save_small(new_grid1, folder_name, data_root_path):
     - The points considered for distance calculations are within the 3x3 grid, and distances are
       converted to millimeters and scaled by a factor of 0.2. known from previous calculations
     """
-    n_rows, n_columns, _ = new_grid1.shape
+    n_rows, _, _ = new_grid1.shape
 
     lengths_in_mm = []
     for i, j in [(i, j) for i in range(3) for j in range(3)]:
@@ -743,7 +744,6 @@ def add_points_parts(average_distance, new_grid1, N_ROWS,parts):
 
         nan_count = np.isnan(new_grid1[:, :, 1]).sum()
         i += 1
-    nan_indices_x = np.argwhere(np.isnan(new_grid1[..., 0]))
     for col in range(n_columns):
         for row in range(N_ROWS):
             if np.isnan(new_grid1[row, col, 0]) and not np.isnan(new_grid1[row, col, 1]):
