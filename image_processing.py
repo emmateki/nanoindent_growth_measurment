@@ -6,6 +6,10 @@ import os
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
+AVERAGE_DISTANCE_VERTICAL = 302  # set by previous observation
+# Given distances between columns and points
+COLUMN_DISTANCE = [300.52, 300.55]
+POINT_DISTANCE = [302.14, 302.1, 302.14]
 
 def get_indent_mask(img, threshold_h, threshold_l, close_size=41):
     # Apply preprocessing to highlight indents
@@ -128,6 +132,7 @@ def rearrange_grid(grid_w_real_points):
     Returns:
     - numpy ndarray: Rearranged grid with matched  x and y-coordinates.
     """
+
     n_rows, _, _ = grid_w_real_points.shape
     rearranged_grid = np.full_like(grid_w_real_points, np.nan)
 
@@ -138,32 +143,19 @@ def rearrange_grid(grid_w_real_points):
     rearranged_grid[:, 1, :] = middle_column
 
     for row in range(n_rows):
-        if not np.isnan(grid_w_real_points[row, 0, 0]):
-            target_y = middle_column[row, 1]
-            y_min = target_y - 20
-            y_max = target_y + 20
+        target_y = middle_column[row, 1]
+        y_min, y_max = target_y - 20, target_y + 20
 
-            matching_indices = np.where(
-                (right_column[:, 1] >= y_min) & (right_column[:, 1] <= y_max))[0]
+        matching_indices_right = np.argwhere(
+            (right_column[:, 1] >= y_min) & (right_column[:, 1] <= y_max))
 
-            if len(matching_indices) > 0:
-                # If there are matching points, copy them to the new grid with the adjusted y-coordinate
-                for index in matching_indices:
-                    rearranged_grid[row, 0,
-                                    :] = grid_w_real_points[index, 0, :]
+        matching_indices_left = np.argwhere(
+            (left_column[:, 1] >= y_min) & (left_column[:, 1] <= y_max))
 
-        if not np.isnan(grid_w_real_points[row, 2, 0]):
-            target_y = middle_column[row, 1]
-            y_min = target_y - 20
-            y_max = target_y + 20
-
-            matching_indices = np.where(
-                (left_column[:, 1] >= y_min) & (left_column[:, 1] <= y_max))[0]
-
-            if len(matching_indices) > 0:
-                for index in matching_indices:
-                    rearranged_grid[row, 2,
-                                    :] = grid_w_real_points[index, 2, :]
+        if matching_indices_right.size > 0:
+            rearranged_grid[row, 0, :] = grid_w_real_points[matching_indices_right[0, 0], 0, :]
+        if matching_indices_left.size > 0:
+            rearranged_grid[row, 2, :] = grid_w_real_points[matching_indices_left[0, 0], 2, :]
 
     return rearranged_grid
 
@@ -192,13 +184,12 @@ def process_grid(rearranged_grid, X_THRESHOLD, X1_THRESHOLD, N_ROWS, PARTS):
 
         valid_indices = ~np.isnan(x_coordinates)
         x_valid, y_valid = x_coordinates[valid_indices], y_coordinates[valid_indices]
-
+        
         x_median = np.median(x_valid)
 
         # Filter points based on x_threshold
         valid_mask = np.abs(x_valid - x_median) <= X_THRESHOLD
         x_filtered, y_filtered = x_valid[valid_mask], y_valid[valid_mask]
-
         # Perform linear regression
         A = np.vstack([x_filtered, np.ones(len(x_filtered))]).T
         m, c = np.linalg.lstsq(A, y_filtered, rcond=None)[0]
@@ -208,7 +199,7 @@ def process_grid(rearranged_grid, X_THRESHOLD, X1_THRESHOLD, N_ROWS, PARTS):
 
         update_grid(rearranged_grid, x_coordinates, y_coordinates,
                     valid_indices, X1_THRESHOLD, m, c, i, N_ROWS, col)
-
+        
     return rearranged_grid
 
 
@@ -241,33 +232,39 @@ def calculate_average_vertical_distance(grid_remove_points, N_ROWS):
     n_rows, n_columns, _ = grid_remove_points.shape
     total_distance = 0
     count = 0
-    average = 0
-    average1 = 0
-    for col, part in [(col, part) for col in range(n_columns) for part in range(2)]:
+    for col in range(0,n_columns):
 
-        start_row = part * N_ROWS+1
-        end_row = start_row + N_ROWS
-        y_coordinates = grid_remove_points[start_row:end_row, col, 1]
+        y_coordinates = grid_remove_points[:N_ROWS, col, 1]
         valid_indices = ~np.isnan(y_coordinates)
 
         if np.sum(valid_indices) >= 2:
             for row in range(1, N_ROWS):
                 if valid_indices[row - 1] and valid_indices[row]:
-                    distance = abs(
-                        y_coordinates[row] - y_coordinates[row - 1])
+                    distance = abs(y_coordinates[row] - y_coordinates[row - 1])
                     total_distance += distance
-                count += 1
+                    count += 1
 
-        if count > 0:
-            if part == 0:
-                average = total_distance / count
-            else:
-                average1 = total_distance / count
+    if count > 0:
+        average = total_distance/count
+    total_distance = 0
+    count = 0
+    
+    for col in range(n_columns):
 
-        total_distance = 0
-        count = 0
+        y_coordinates = grid_remove_points[N_ROWS:N_ROWS*2, col, 1]        
+        valid_indices = ~np.isnan(y_coordinates)
 
-    return (average + average1) / 2
+        # Check if there are at least two valid neighboring points in the column
+        if np.sum(valid_indices) >= 2:
+            for row in range(1, N_ROWS):
+                if valid_indices[row - 1] and valid_indices[row]:
+                    distance = abs(y_coordinates[row] - y_coordinates[row - 1])
+                    total_distance += distance
+                    count += 1
+    if count > 0:
+        average1 = total_distance/count
+    
+    return ((average+average1)/2)
 
 
 def calculate_distance_and_save_small(new_grid1, folder_name, data_root_path):
@@ -457,7 +454,6 @@ def calculate_distance_and_save_big(new_grid1, folder_name, data_root_path):
 
         df_done = pd.read_excel(file_path)
 
-        # percentage increase
         diff_all_col = (
             df_done.at[2, "All_Coll"]-df_done.at[0, "All_Coll"])/df_done.at[0, "All_Coll"]*100
         diff_1_col = (df_done.at[2, "Col_1"]-df_done.at[0,
@@ -506,7 +502,7 @@ def find_origin_last(img):
     return filtered_centers_last
 
 
-def find_origin(img):
+def find_origin_start(img):
     filtered_centers1 = np.array([])
     X_START, X_END, Y_START, Y_END = 450, 720, 500, 820
     cropped = img[Y_START:Y_END, X_START:X_END]
@@ -530,10 +526,38 @@ def find_origin(img):
     return filtered_centers1_original
 
 
+def find_origin_middle(img):
+
+    filtered_centers_m = np.array([])# region where the middle points is most of the time located
+    X_START, X_END, Y_START, Y_END = 450, 720, 14500, 14800
+
+    cropped = img[Y_START:Y_END, X_START:X_END]
+
+    threshold = 50
+    img_highlight = _suppress_non_grid_artifacts(cropped, threshold)
+
+    threshold_h = 15
+    threshold_l = 15
+    mask1 = np.array([])
+    mask1 = get_indent_mask(img_highlight, threshold_h, threshold_l)
+
+    filtered_centers_m = _get_component_centers(mask1)
+
+    filtered_centers_m_original = np.array([])
+    filtered_centers_m = np.array(filtered_centers_m)
+
+    if filtered_centers_m.size == 0 or filtered_centers_m.size >= 4:
+        # If it's empty, set filtered_centers1_original to a specific value
+        filtered_centers_m_original = np.array([[606, 14678]], dtype=np.int32)
+    else:
+        # Transform the filtered coordinates back to the original image's coordinate system
+        filtered_centers_m_original = filtered_centers_m + \
+            np.array([X_START, Y_START])
+
+    return filtered_centers_m_original
+
+
 def manual_grid(filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original, N_ROWS, parts):
-    # Given distances between columns and points
-    COLUMN_DISTANCE = [300.52, 300.55]
-    POINT_DISTANCE = [302.14, 302.1, 302.14]
     grid_manual = []
 
     for i, j in [(i, j) for i in range(1) for j in range(N_ROWS)]:
@@ -636,117 +660,6 @@ def calculate_x_coordinate(y, m, c):
     return (y - c) / m
 
 
-def add_points(average_distance, new_grid1, N_ROWS):
-    """
-    Add missing points to the grid and adjust their positions based on given criteria-linear dependency .
-
-    Parameters:
-    - average_distance: The average vertical distance between neighboring points.
-    - new_grid1 (ndarray): Array representing the grid with points where some are missing.
-    - coefficients (ndarray): Coefficients of linear regression for each column in the grid.
-
-    Returns:
-    - ndarray: The grid with added and adjusted points.
-    """
-
-    n_rows, n_columns, _ = new_grid1.shape
-    i = 0
-    nan_count = np.isnan(new_grid1[:, :, 1]).sum()
-
-    while nan_count != 0 or i < 2000:
-
-        for col in range(n_columns):
-            for row in range(N_ROWS):
-                if np.isnan(new_grid1[row, col, 1]):
-
-                    if (not np.isnan(new_grid1[row - 1, col, 1]) and not (row-1) < 0):
-
-                        new_grid1[row, col, 1] = new_grid1[row -
-                                                           1, col, 1] + average_distance
-                    elif ((row+1) < (N_ROWS+1)) and not np.isnan(new_grid1[row + 1, col, 1]):
-                        new_grid1[row, col, 1] = new_grid1[row +
-                                                           1, col, 1] - average_distance
-
-            for row in range(N_ROWS, N_ROWS+N_ROWS):
-
-                if np.isnan(new_grid1[row, col, 1]):
-
-                    if (not np.isnan(new_grid1[row - 1, col, 1]) and (not ((row-1) < N_ROWS))):
-
-                        new_grid1[row, col, 1] = new_grid1[row -
-                                                           1, col, 1] + average_distance
-
-                    elif (row+1 < N_ROWS+N_ROWS) and not np.isnan(new_grid1[row + 1, col, 1]):
-                        new_grid1[row, col, 1] = new_grid1[row +
-                                                           1, col, 1] - average_distance
-
-            for row in range(N_ROWS*2, n_rows):
-
-                if np.isnan(new_grid1[row, col, 1]):
-
-                    if (not np.isnan(new_grid1[row - 1, col, 1]) and not (row-1) <= (N_ROWS*2)):
-
-                        new_grid1[row, col, 1] = new_grid1[row -
-                                                           1, col, 1] + average_distance
-
-                    elif row < n_rows and not np.isnan(new_grid1[row + 1, col, 1]):
-                        new_grid1[row, col, 1] = new_grid1[row +
-                                                           1, col, 1] - average_distance
-
-        nan_count = np.isnan(new_grid1[:, :, 1]).sum()
-
-        i = i+1
-
-    for col in range(n_columns):
-        for row in range(N_ROWS):
-            if np.isnan(new_grid1[row, col, 0]):
-                if not np.isnan(new_grid1[row, col, 1]):
-                    # Calculate the median x-coordinate in the column
-                    x_median = np.nanmedian(new_grid1[:N_ROWS, col, 0])
-                    new_grid1[row, col, 0] = x_median
-
-        for row in range(N_ROWS, n_rows):
-            if np.isnan(new_grid1[row, col, 0]):
-                if not np.isnan(new_grid1[row, col, 1]):
-                    # Calculate the median x-coordinate in the column
-                    x_median = np.nanmedian(
-                        new_grid1[N_ROWS:n_rows, col, 0])
-                    new_grid1[row, col, 0] = x_median
-
-        return new_grid1
-
-
-def find_origin_middle(img):
-
-    filtered_centers_m = np.array([])# region where the middle points is most of the time located
-    X_START, X_END, Y_START, Y_END = 450, 720, 14500, 14800
-
-    cropped = img[Y_START:Y_END, X_START:X_END]
-
-    threshold = 50
-    img_highlight = _suppress_non_grid_artifacts(cropped, threshold)
-
-    threshold_h = 15
-    threshold_l = 15
-    mask1 = np.array([])
-    mask1 = get_indent_mask(img_highlight, threshold_h, threshold_l)
-
-    filtered_centers_m = _get_component_centers(mask1)
-
-    filtered_centers_m_original = np.array([])
-    filtered_centers_m = np.array(filtered_centers_m)
-
-    if filtered_centers_m.size == 0 or filtered_centers_m.size >= 4:
-        # If it's empty, set filtered_centers1_original to a specific value
-        filtered_centers_m_original = np.array([[606, 14678]], dtype=np.int32)
-    else:
-        # Transform the filtered coordinates back to the original image's coordinate system
-        filtered_centers_m_original = filtered_centers_m + \
-            np.array([X_START, Y_START])
-
-    return filtered_centers_m_original
-
-
 def empty_grid(grid_final, N_ROWS):
     """
     Expand the input grid with empty rows to fill gaps between existing rows.
@@ -763,13 +676,12 @@ def empty_grid(grid_final, N_ROWS):
     - ndarray: The expanded grid with empty rows added to fill the gaps.
     """
 
-    AVERAGE_DISTANCE = 302  # set by previous observation
     diff = grid_final[N_ROWS, 0, 1]-grid_final[N_ROWS-1, 0, 1]
-    no_of_rows = +round(diff / AVERAGE_DISTANCE - 1)
+    no_of_rows = +round(diff / AVERAGE_DISTANCE_VERTICAL - 1)
 
     diff2 = grid_final[N_ROWS*2, 0, 1]-grid_final[N_ROWS*2-1, 0, 1]
 
-    no_of_rows2 = round(diff2 / AVERAGE_DISTANCE - 1)
+    no_of_rows2 = round(diff2 / AVERAGE_DISTANCE_VERTICAL - 1)
 
     nan_grid = np.full((no_of_rows, 3, 2), np.nan)
     nan_grid2 = np.full((no_of_rows2, 3, 2), np.nan)
@@ -779,73 +691,85 @@ def empty_grid(grid_final, N_ROWS):
     return grid_final_bigger
 
 
-def add_points_two(average_distance, grid_bigger_empty, N_ROWS):
-    n_rows, n_columns, _ = grid_bigger_empty.shape
-    nan_count = np.isnan(grid_bigger_empty[:, :, 1]).sum()
-    while nan_count != 0:
+def add_points_parts(average_distance, new_grid1, N_ROWS,parts):
+    """
+    Add missing points to the grid and adjust their positions based on given criteria-linear dependency .
+
+    Parameters:
+    - average_distance: The average vertical distance between neighboring points.
+    - new_grid1 (ndarray): Array representing the grid with points where some are missing.
+    - coefficients (ndarray): Coefficients of linear regression for each column in the grid.
+
+    Returns:
+    - ndarray: The grid with added and adjusted points.
+    """
+
+    n_rows, n_columns, _ = new_grid1.shape
+    i = 0
+    nan_count = np.isnan(new_grid1[:, :, 1]).sum()
+
+    def update_missing_points(row_start, row_end, col):
+        for row in range(row_start, row_end):
+            if np.isnan(new_grid1[row, col, 1]):
+                if row > row_start and not np.isnan(new_grid1[row - 1, col, 1]):
+                    new_grid1[row, col, 1] = new_grid1[row - 1, col, 1] + average_distance
+                elif (row+1) < row_end and not np.isnan(new_grid1[row + 1, col, 1]):
+                    new_grid1[row, col, 1] = new_grid1[row + 1, col, 1] - average_distance
+
+    i = 0
+    nan_count = np.isnan(new_grid1[:, :, 1]).sum()
+
+    while nan_count != 0 and i < n_rows*n_columns:
 
         for col in range(n_columns):
-            for row in range(n_rows):
-                if np.isnan(grid_bigger_empty[row, col, 1]):
+            update_missing_points(0, N_ROWS, col)
+            update_missing_points(N_ROWS, N_ROWS*2, col)
 
-                    if (not np.isnan(grid_bigger_empty[row - 1, col, 1]) and (not (row-1) < 0)):
+            if parts == 3:
+                update_missing_points(N_ROWS*2, n_rows, col)
 
-                        grid_bigger_empty[row, col, 1] = grid_bigger_empty[row -
-                                                                           1, col, 1] + average_distance
-                    elif (row+1 < n_rows) and (not np.isnan(grid_bigger_empty[row + 1, col, 1])):
-                        grid_bigger_empty[row, col, 1] = grid_bigger_empty[row +
-                                                                           1, col, 1] - average_distance
-
-        nan_count = np.isnan(grid_bigger_empty[:, :, 1]).sum()
-
+        nan_count = np.isnan(new_grid1[:, :, 1]).sum()
+        i += 1
+    nan_indices_x = np.argwhere(np.isnan(new_grid1[..., 0]))
     for col in range(n_columns):
-        for row in range(n_rows):
-            if np.isnan(grid_bigger_empty[row, col, 0]):
-                if not np.isnan(grid_bigger_empty[row, col, 1]):
-                    # Calculate the median x-coordinate in the column
-                    x_median = np.nanmedian(grid_bigger_empty[:n_rows, col, 0])
-                    grid_bigger_empty[row, col, 0] = x_median
+        for row in range(N_ROWS):
+            if np.isnan(new_grid1[row, col, 0]) and not np.isnan(new_grid1[row, col, 1]):
+                x_median = np.nanmedian(new_grid1[:N_ROWS, col, 0])
+                new_grid1[row, col, 0] = x_median
 
-    return grid_bigger_empty
+        for row in range(N_ROWS, n_rows):
+            if np.isnan(new_grid1[row, col, 0]) and not np.isnan(new_grid1[row, col, 1]):
+                x_median = np.nanmedian(new_grid1[N_ROWS:n_rows, col, 0])
+                new_grid1[row, col, 0] = x_median
+
+    return new_grid1
 
 
-def add_points_three(average_distance, grid_bigger_empty, N_ROWS):
-    n_rows, n_columns, _ = grid_bigger_empty.shape
+def add_points_full_grid(average_distance, grid_bigger_empty, N_ROWS):
+    n_rows, _, _ = grid_bigger_empty.shape
     i = 0
-
+    nan_indices_y = np.argwhere(np.isnan(grid_bigger_empty[..., 1]))
     nan_count = np.isnan(grid_bigger_empty[:, :, 1]).sum()
     while nan_count != 0 or i < 400:
+        for idx in nan_indices_y:
+            row, col = idx
+            if not np.isnan(grid_bigger_empty[row - 1, col, 1]) and not row - 1 < 0:
+                grid_bigger_empty[row, col, 1] = grid_bigger_empty[row - 1, col, 1] + average_distance
+            elif row < n_rows - 1 and not np.isnan(grid_bigger_empty[row + 1, col, 1]):
+                grid_bigger_empty[row, col, 1] = grid_bigger_empty[row + 1, col, 1] - average_distance
 
-        for col in range(n_columns):
-            for row in range(n_rows):
-                # Check if the y-coordinate is missing
-                if np.isnan(grid_bigger_empty[row, col, 1]):
-
-                    if (not np.isnan(grid_bigger_empty[row - 1, col, 1]) and not row-1 < 0):
-                        grid_bigger_empty[row, col, 1] = grid_bigger_empty[row -
-                                                                           1, col, 1] + average_distance
-                    # Check if the below point is defined
-                    elif row < n_rows - 1 and not np.isnan(grid_bigger_empty[row + 1, col, 1]):
-                        grid_bigger_empty[row, col, 1] = grid_bigger_empty[row +
-                                                                           1, col, 1] - average_distance
         nan_count = np.isnan(grid_bigger_empty[:, :, 1]).sum()
-        i = i+1
+        i += 1
+    nan_indices_x = np.argwhere(np.isnan(grid_bigger_empty[..., 0]))
+    for idx in nan_indices_x:
+        row, col = idx
+        if not np.isnan(grid_bigger_empty[row, col, 1]):
+            if row < N_ROWS:
+                x_median = np.nanmedian(grid_bigger_empty[0:N_ROWS, col, 0])
+            elif row > (N_ROWS*2):
+                x_median = np.nanmedian(grid_bigger_empty[N_ROWS:N_ROWS*2, col, 0])
+            else:
+                x_median = np.nanmedian(grid_bigger_empty[N_ROWS:n_rows, col, 0])
+            grid_bigger_empty[row, col, 0] = x_median
 
-    for col in range(n_columns):
-        for row in range(n_rows):
-            if np.isnan(grid_bigger_empty[row, col, 0]):
-                if not np.isnan(grid_bigger_empty[row, col, 1]):
-
-                    if row < 10:
-                        x_median = np.nanmedian(
-                            grid_bigger_empty[0:row+10, col, 0])
-                        grid_bigger_empty[row, col, 0] = x_median
-                    elif row > (n_rows-10):
-                        x_median = np.nanmedian(
-                            grid_bigger_empty[row-10:n_rows, col, 0])
-                        grid_bigger_empty[row, col, 0] = x_median
-                    else:
-                        x_median = np.nanmedian(
-                            grid_bigger_empty[row-10:row+10, col, 0])
-                        grid_bigger_empty[row, col, 0] = x_median
     return grid_bigger_empty

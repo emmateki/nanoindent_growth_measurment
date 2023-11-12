@@ -78,22 +78,22 @@ def processing(img, folder_name, data_root_path):
     parts = 3
     
     try:
-        filtered_centers1_original = ip.find_origin(img)
+        filtered_centers1_original = ip.find_origin_start(img)
         filtered_centers_last_original = ip.find_origin_last(img)
         filtered_centers_m_original = ip.find_origin_middle(img)
         N_ROWS = N_ROWS 
         grid_manual = ip.manual_grid(
             filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original,N_ROWS, parts) 
-
+        
         grid_w_real_points = ip.create_new_grid(img, grid_manual)
-
+        
         rearranged_grid = ip.rearrange_grid(grid_w_real_points)
 
         # Remove points based on least square fit and calculate linear dependency, equations, and coefficients
         grid_remove_points = ip.process_grid(
             rearranged_grid, X_THRESHOLD=4, X1_THRESHOLD=40, N_ROWS=11, PARTS=3)
-
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
+
         n_rows, n_columns, _ = grid_remove_points.shape
 
         if nan_count >= ((n_rows * n_columns) / 4 * 3):
@@ -101,18 +101,21 @@ def processing(img, folder_name, data_root_path):
                 log_error(folder_name, error_message)
         else:
             average_distance = ip.calculate_average_vertical_distance(
-                grid_remove_points, N_ROWS-1)
+                grid_remove_points, N_ROWS)
 
-            grid_final = ip.add_points(
-                average_distance, grid_remove_points, N_ROWS)
+            grid_final = ip.add_points_parts(
+                average_distance, grid_remove_points, N_ROWS,parts)
 
             grid_bigger_empty = ip.empty_grid(grid_final, N_ROWS)
-            grid_bigger_empty = ip.add_points_two(
-                average_distance, grid_bigger_empty, N_ROWS)
-            grid_bigger_full = ip.create_new_grid(img, grid_bigger_empty)
 
-            grid_final_final = ip.add_points_three(
+            grid_bigger_empty = ip.add_points_full_grid(
+                average_distance, grid_bigger_empty, N_ROWS)
+            
+            grid_bigger_full = ip.create_new_grid(img, grid_bigger_empty)
+            
+            grid_final_final = ip.add_points_full_grid(
                 average_distance, grid_bigger_full, N_ROWS)
+            
 
             save_pics(grid_final_final, img, folder_name, data_root_path)
 

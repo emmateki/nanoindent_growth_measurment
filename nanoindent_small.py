@@ -74,11 +74,11 @@ def processing(img, folder_name, data_root_path):
         data_root_path: Path to the root data directory.
 
     """
-    N_ROWS=8
+    N_ROWS=9
     parts = 2
     
     try:
-        filtered_centers1_original = ip.find_origin(img)
+        filtered_centers1_original = ip.find_origin_start(img)
         filtered_centers_last_original = ip.find_origin_last(img)
         filtered_centers_m_original = [0,0]
         grid_manual = ip.manual_grid(filtered_centers_m_original,filtered_centers1_original, filtered_centers_last_original,N_ROWS,parts)
@@ -89,7 +89,7 @@ def processing(img, folder_name, data_root_path):
 
         # Remove points based on least square fit and calculate linear dependency, equations, and coefficients
         grid_remove_points = ip.process_grid(
-            rearranged_grid, X_THRESHOLD=4, X1_THRESHOLD=40,N_ROWS=8,PARTS=2)
+            rearranged_grid, X_THRESHOLD=4, X1_THRESHOLD=40,N_ROWS=9,PARTS=2)
 
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
         n_rows, n_columns, _ = grid_remove_points.shape
@@ -97,9 +97,9 @@ def processing(img, folder_name, data_root_path):
             error_message = "Not enough points detected."
             log_error(folder_name, error_message)
         else:
-            average_distance = ip.calculate_average_vertical_distance(grid_remove_points,N_ROWS = 7)
+            average_distance = ip.calculate_average_vertical_distance(grid_remove_points,N_ROWS = 9)
 
-            grid_final = ip.add_points(average_distance, grid_remove_points)
+            grid_final = ip.add_points_parts(average_distance, grid_remove_points,N_ROWS,parts)
             save_pics(grid_final, img, folder_name, data_root_path)
             # Write the results to Excel files
             ip.calculate_distance_and_save_small(grid_final, folder_name, data_root_path)
