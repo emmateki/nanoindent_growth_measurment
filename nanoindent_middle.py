@@ -7,16 +7,15 @@ import image_processing as ip
 import argparse
 import os
 import numpy as np
+import logging
 
-def create_folder_if_not_exists(folder_path):
-    if not folder_path.exists():
-        folder_path.mkdir()
 
 def main(data_root):
     data_root_path = pathlib.Path(data_root)
     df = indentation_reader.read_data(data_root_path)
     out_folder = data_root_path.parent / "OUT"
-    create_folder_if_not_exists(out_folder)
+    os.makedirs(out_folder, exist_ok=True)
+
     folder_names = [
         folder.name for folder in data_root_path.iterdir() if folder.is_dir()]
 
@@ -25,13 +24,13 @@ def main(data_root):
             row = df.iloc[j]
             folder_name = folder_names[j]
 
-            if folder_name :
+            if folder_name:
 
-                processing(row.img_before, folder_name,out_folder)
-                processing(row.img_after, folder_name,out_folder)
+                processing(row.img_before, folder_name, out_folder)
+                processing(row.img_after, folder_name, out_folder)
             else:
                 error_message = "Folder is empty."
-                log_error(folder_name, error_message)
+                log_error(folder_name, error_message, out_folder)
 
 
 def save_pics(grid_final_final, img, folder_name, data_root_path):
@@ -59,22 +58,32 @@ def save_pics(grid_final_final, img, folder_name, data_root_path):
     plt.close()
 
 
-def log_error(folder_name, error_message):
+def configure_logger(folder_name, out_folder):
+    log_folder = out_folder/"ERROR"
+    os.makedirs(log_folder, exist_ok=True)
+
+    log_file = os.path.join(log_folder, f"{folder_name}_error.log")
+
+    logging.basicConfig(
+        filename=log_file,
+        level=logging.ERROR,
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+
+
+def log_error(folder_name, error_message, out_folder):
     """
-    Log an error message to a file.
+    Log an error message using the configured logger.
 
     Args:
         folder_name: Name of the folder where the error occurred.
         error_message: Error message to log.
     """
-    error_folder = "ERROR"
-    os.makedirs(error_folder, exist_ok=True)
-    error_file = os.path.join(error_folder, f"{folder_name}_error.txt")
-    with open(error_file, "a") as f:
-        f.write(error_message + "\n")
+    configure_logger(folder_name, out_folder)
+    logging.error(error_message)
 
 
-def processing(img, folder_name,out_folder,minimum_detected_points=0.75):
+def processing(img, folder_name, out_folder, minimum_detected_points=0.75):
     """
     Process image data and save results.
 
@@ -103,14 +112,14 @@ def processing(img, folder_name,out_folder,minimum_detected_points=0.75):
 
         # Remove points based on least square fit and calculate linear dependency, equations, and coefficients
         grid_remove_points = ip.process_grid(
-            rearranged_grid, 4, 40, N_ROWS, PARTS)#X_THRESHOLD = 4, X1_THRESHOLD = 40, constants set based on observation for better effectivity 
+            rearranged_grid, 4, 40, N_ROWS, PARTS)  # X_THRESHOLD = 4, X1_THRESHOLD = 40, constants set based on observation for better effectivity
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
 
         n_rows, n_columns, _ = grid_remove_points.shape
 
         if nan_count >= ((n_rows * n_columns) / minimum_detected_points):
             error_message = "Not enough points detected."
-            log_error(folder_name, error_message)
+            log_error(folder_name, error_message, out_folder)
         else:
             average_distance = ip.calculate_average_vertical_distance(
                 grid_remove_points, N_ROWS)
@@ -135,7 +144,7 @@ def processing(img, folder_name,out_folder,minimum_detected_points=0.75):
                 grid_final_final, folder_name, out_folder)
     except Exception as e:
         error_message = f"Error processing {folder_name}: {str(e)}"
-        log_error(folder_name, error_message)
+        log_error(folder_name, error_message, out_folder)
 
 
 if __name__ == "__main__":
