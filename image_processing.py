@@ -283,16 +283,16 @@ def calculate_average_vertical_distance(grid_remove_points, N_ROWS):
 
 def calculate_distance_and_save_small(new_grid1, folder_name, data_root_path):
     """
-    Calculate and store distance metrics in an Excel file for specific grid points.
+    Calculate and store distance metrics in an csv file for specific grid points.
 
     This function calculates distance metrics for specific grid points within grid and stores
-    the results in an Excel file. The function computes the distances between these points and
-    appends the calculated metrics to an existing or new Excel file.
+    the results in an csv file. The function computes the distances between these points and
+    appends the calculated metrics to an existing or new csv file.
 
     Parameters:
     new_grid1 (numpy.ndarray): The input grid data containing coordinates.
-    folder_name (str): The name of the folder to save the output Excel file.
-    data_root_path (str): The root path where the Excel file will be saved.
+    folder_name (str): The name of the folder to save the output csv file.
+    data_root_path (str): The root path where the csv file will be saved.
 
     Returns:
     None
@@ -307,11 +307,11 @@ def calculate_distance_and_save_small(new_grid1, folder_name, data_root_path):
     - The points considered for distance calculations are within the 3x3 grid, and distances are
       converted to millimeters and scaled by a factor of 0.2. known from previous calculations
     """
+
     n_rows, _, _ = new_grid1.shape
 
     lengths_in_mm = []
     for i, j in [(i, j) for i in range(3) for j in range(3)]:
-
         x1 = new_grid1[j, i, 0]
         x2 = new_grid1[n_rows - j - 1, i, 0]
         y1 = new_grid1[j, i, 1]
@@ -320,74 +320,75 @@ def calculate_distance_and_save_small(new_grid1, folder_name, data_root_path):
         lengths_in_mm.append(length / 60 * (0.2))
 
     data_after = {
-        "Points": ["Col_0", "Col_1", "Col_2", " "],
+        "Points": ["Col_0", "Col_1", "Col_2", "Differnce"],
         "2_94": [lengths_in_mm[0], lengths_in_mm[3], lengths_in_mm[6], None],
         "95_187": [lengths_in_mm[1], lengths_in_mm[4], lengths_in_mm[7], None],
         "190_282": [lengths_in_mm[2], lengths_in_mm[5], lengths_in_mm[8], None],
     }
+
     data_before = {
-        "Points": ["Col_0", "Col_1", "Col_2", " "],
-        "2_94": [lengths_in_mm[0], lengths_in_mm[3], lengths_in_mm[6], "After"],
+        "Points": ["Col_0", "Col_1", "Col_2", "After"],
+        "2_94": [lengths_in_mm[0], lengths_in_mm[3], lengths_in_mm[6], None],
         "95_187": [lengths_in_mm[1], lengths_in_mm[4], lengths_in_mm[7], None],
         "190_282": [lengths_in_mm[2], lengths_in_mm[5], lengths_in_mm[8], None],
     }
 
-    result_folder = data_root_path / "RESULT"
+    result_folder = os.path.join(data_root_path, "RESULT")
     os.makedirs(result_folder, exist_ok=True)
     os.chdir(result_folder)
 
-    file_name = f"lengths_{folder_name}.xlsx"
+    file_name = f"lengths_{folder_name}.csv"
     file_path = os.path.join(result_folder, file_name)
 
     if os.path.isfile(file_path):
-
-        df_existing = pd.read_excel(file_path)
-
+        df_existing = pd.read_csv(file_path)
+        df_existing[['2_94', '95_187', '190_282']] = df_existing[['2_94', '95_187', '190_282']].apply(pd.to_numeric, errors='coerce')
         df_updated = pd.concat([df_existing, pd.DataFrame(data_after)])
+        df_updated.to_csv(file_path, index=False)
 
-        df_updated.to_excel(file_path, index=False)
+        df_done = pd.read_csv(file_path)
+        df_done[['2_94', '95_187', '190_282']] = df_done[['2_94', '95_187', '190_282']].apply(pd.to_numeric, errors='coerce')
 
-        df_done = pd.read_excel(file_path)
+        diff_col_0_2_94 = df_done.at[4, "2_94"] - df_done.at[0, "2_94"]
+        diff_col_0_95_187 = df_done.at[4, "95_187"] - df_done.at[0, "95_187"]
+        diff_col_0_190_282 = df_done.at[4, "190_282"] - df_done.at[0, "190_282"]
 
-        diff_col_0_2_94 = df_done.at[4, "2_94"]-df_done.at[0, "2_94"]
-        diff_col_0_95_187 = df_done.at[4, "95_187"]-df_done.at[0, "95_187"]
-        diff_col_0_190_282 = df_done.at[4, "190_282"]-df_done.at[0, "190_282"]
+        diff_col_1_2_94 = df_done.at[5, "2_94"] - df_done.at[1, "2_94"]
+        diff_col_1_95_187 = df_done.at[5, "95_187"] - df_done.at[1, "95_187"]
+        diff_col_1_190_282 = df_done.at[5, "190_282"] - df_done.at[1, "190_282"]
 
-        diff_col_1_2_94 = df_done.at[5, "2_94"]-df_done.at[1, "2_94"]
-        diff_col_1_95_187 = df_done.at[5, "95_187"]-df_done.at[1, "95_187"]
-        diff_col_1_190_282 = df_done.at[5, "190_282"]-df_done.at[1, "190_282"]
+        diff_col_2_2_94 = df_done.at[6, "2_94"] - df_done.at[2, "2_94"]
+        diff_col_2_95_187 = df_done.at[6, "95_187"] - df_done.at[2, "95_187"]
+        diff_col_2_190_282 = df_done.at[6, "190_282"] - df_done.at[2, "190_282"]
 
-        diff_col_2_2_94 = df_done.at[6, "2_94"]-df_done.at[2, "2_94"]
-        diff_col_2_95_187 = df_done.at[6, "95_187"]-df_done.at[2, "95_187"]
-
-        diff_col_2_190_282 = df_done.at[6, "190_282"]-df_done.at[2, "190_282"]
         data_diff = {
-            "Points": ["Col_0", "Col_1", "Col_2", " "],
-            "2_94": [diff_col_0_2_94, diff_col_1_2_94, diff_col_2_2_94, "Difference"],
+            "Points": ["Col_0", "Col_1", "Col_2", ""],
+            "2_94": [diff_col_0_2_94, diff_col_1_2_94, diff_col_2_2_94, None],
             "95_187": [diff_col_0_95_187, diff_col_1_95_187, diff_col_2_95_187, None],
             "190_282": [diff_col_0_190_282, diff_col_1_190_282, diff_col_2_190_282, None],
         }
-        df_existing = pd.read_excel(file_path)
-        df_updated = pd.concat([df_existing, pd.DataFrame(data_diff)])
 
-        df_updated.to_excel(file_path, index=False)
+        df_existing = pd.read_csv(file_path)
+        df_updated = pd.concat([df_existing, pd.DataFrame(data_diff)])
+        df_updated.to_csv(file_path, index=False)
 
     else:
         df = pd.DataFrame(data_before)
-        df.to_excel(file_path, index=False)
+        df.to_csv(file_path, index=False)
+
 
 
 def calculate_distance_and_save_big(new_grid1, folder_name, data_root_path):
     """
-    Calculate distance metrics and store them in an Excel file.
+    Calculate distance metrics and store them in an csv file.
 
     Function calculates average lengths and percentage increases based on the given grid data. 
-    It then stores the results in an Excel file.
+    It then stores the results in an csv file.
 
     Parameters:
     new_grid1 (numpy.ndarray): The input grid data containing coordinates.
-    folder_name (str): The name of the folder to save the output Excel file.
-    data_root_path (str): The root path where the Excel file will be saved.
+    folder_name (str): The name of the folder to save the output csv file.
+    data_root_path (str): The root path where the csv file will be saved.
 
     Returns:
     None
@@ -398,97 +399,62 @@ def calculate_distance_and_save_big(new_grid1, folder_name, data_root_path):
     3. Calculates the average length for each adjacent pair of columns-horizontal lenght.
     """
 
-    n_rows, n_columns, _ = new_grid1.shape
-    average_length_mm, average_length, average_length1, average_length2 = 0, 0, 0, 0
-    count, count1, count2 = 0, 0, 0
-    total_length, total_length1, total_length2 = 0, 0, 0
-    length, length1, length2 = 0, 0, 0
-    for col, row in [(col, row) for col in range(n_columns) for row in range(n_rows-1)]:
-        if not np.isnan(new_grid1[row, col, 1]) and not np.isnan(new_grid1[row + 1, col, 1]):
-            x1 = new_grid1[row, col, 0]
-            x2 = new_grid1[row + 1, col, 0]
-            y1 = new_grid1[row, col, 1]
-            y2 = new_grid1[row + 1, col, 1]
-            length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    n_rows, _, _ = new_grid1.shape
 
-            total_length += length
-            count += 1
+    def calculate_average_length(col0,col1,col_shift,row_shift):
+        total_length, count = 0, 0
+        for col in range(col0,col1):
+            for row in range(n_rows - 1):
+                if not np.isnan(new_grid1[row, col, 1]) and not np.isnan(new_grid1[row + 1, col, 1]):
+                    x1, x2 = new_grid1[row, col, 0], new_grid1[row + row_shift, col+col_shift, 0]
+                    y1, y2 = new_grid1[row, col, 1], new_grid1[row + row_shift, col+col_shift, 1]
+                    length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+                    total_length += length
+                    count += 1
+        return total_length / count if count > 0 else 0
 
-    average_length = total_length / count
-    average_length_mm = average_length / 60 * (0.2)
-
-    for row in range(0, n_rows - 1):
-        if not np.isnan(new_grid1[row, 1, 1]) and not np.isnan(new_grid1[row + 1, 1, 1]):
-            x1 = new_grid1[row, 1, 0]
-            x2 = new_grid1[row + 1, 1, 0]
-            y1 = new_grid1[row, 1, 1]
-            y2 = new_grid1[row + 1, 1, 1]
-            length1 = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
-            total_length1 += length1
-            count1 += 1
-
-    average_length1 = total_length1 / count1
-    average_length_mm1 = average_length1 / 60 * (0.2)
-    for col, row in [(col, row) for col in range(2) for row in range(n_rows-1)]:
-        if not np.isnan(new_grid1[row, 1, 1]) and not np.isnan(new_grid1[row + 1, 1, 1]):
-            x1 = new_grid1[row, col, 0]
-            x2 = new_grid1[row, col+1, 0]
-            y1 = new_grid1[row, col, 1]
-            y2 = new_grid1[row, col+1, 1]
-            length2 = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
-            total_length2 += length2
-            count2 += 1
-
-    average_length2 = total_length2 / count2
-    average_length_mm2 = average_length2 / 60 * (0.2)
+    average_length_mm_all = calculate_average_length(0,3,0,1) / 60 * 0.2
+    average_length_mm_middle = calculate_average_length(1,2,0,1) / 60 * 0.2
+    average_length_mm_horizontal = calculate_average_length(0,2,1,0) / 60 * 0.2  
 
     data = {
         "Points": ["All_rows", " "],
-        "All_Coll": [average_length_mm, None],
-        "Col_1": [average_length_mm1, None],
-        "Hor": [average_length_mm2, None],
+        "All_Coll": [average_length_mm_all, None],
+        "Col_1": [average_length_mm_middle, None],
+        "Hor": [average_length_mm_horizontal, None],
     }
 
-    result_folder = data_root_path / "RESULT"
+    result_folder = os.path.join(data_root_path, "RESULT")
     os.makedirs(result_folder, exist_ok=True)
-    os.chdir(result_folder)
 
-    file_name = f"lengths_{folder_name}.xlsx"
+    file_name = f"lengths_{folder_name}.csv"
     file_path = os.path.join(result_folder, file_name)
 
     if os.path.isfile(file_path):
-
-        df_existing = pd.read_excel(file_path)
-
+        df_existing = pd.read_csv(file_path)
         df_updated = pd.concat([df_existing, pd.DataFrame(data)])
+        df_updated.to_csv(file_path, index=False)
 
-        df_updated.to_excel(file_path, index=False)
+        df_done = pd.read_csv(file_path)
 
-        df_done = pd.read_excel(file_path)
+        diff_all_col = (df_done.at[2, "All_Coll"] - df_done.at[0, "All_Coll"]) / df_done.at[0, "All_Coll"] * 100
+        diff_1_col = (df_done.at[2, "Col_1"] - df_done.at[0, "Col_1"]) / df_done.at[0, "Col_1"] * 100
+        diff_Vertic = (df_done.at[2, "Hor"] - df_done.at[0, "Hor"]) / df_done.at[0, "Hor"] * 100
 
-        diff_all_col = (
-            df_done.at[2, "All_Coll"]-df_done.at[0, "All_Coll"])/df_done.at[0, "All_Coll"]*100
-        diff_1_col = (df_done.at[2, "Col_1"]-df_done.at[0,
-                      "Col_1"])/df_done.at[0, "Col_1"]*100
-        diff_Vertic = (df_done.at[2, "Hor"] -
-                       df_done.at[0, "Hor"])/df_done.at[0, "Hor"]*100
         data_diff = {
             "Points": ["All_rows", " "],
             "All_Coll": [diff_all_col, None],
             "Col_1": [diff_1_col, None],
             "Hor": [diff_Vertic, None],
         }
-        df_existing = pd.read_excel(file_path)
-        df_updated = pd.concat([df_existing, pd.DataFrame(data_diff)])
 
-        df_updated.to_excel(file_path, index=False)
+        df_existing = pd.read_csv(file_path)
+        df_updated = pd.concat([df_existing, pd.DataFrame(data_diff)])
+        df_updated.to_csv(file_path, index=False)
 
     else:
-
         df = pd.DataFrame(data)
-        df.to_excel(file_path, index=False)
+        df.to_csv(file_path, index=False)
 
 
 def find_origin_last(img):

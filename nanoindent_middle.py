@@ -81,7 +81,6 @@ def processing(img, folder_name, data_root_path):
         filtered_centers1_original = ip.find_origin_start(img)
         filtered_centers_last_original = ip.find_origin_last(img)
         filtered_centers_m_original = ip.find_origin_middle(img)
-        N_ROWS = N_ROWS 
         grid_manual = ip.manual_grid(
             filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original,N_ROWS, PARTS) 
         
