@@ -9,10 +9,16 @@ import os
 import numpy as np
 
 
+def create_folder_if_not_exists(folder_path):
+    if not folder_path.exists():
+        folder_path.mkdir()
+
+
 def main(data_root):
     data_root_path = pathlib.Path(data_root)
     df = indentation_reader.read_data(data_root_path)
-
+    out_folder = data_root_path.parent / "OUT"
+    create_folder_if_not_exists(out_folder)
     folder_names = [
         folder.name for folder in data_root_path.iterdir() if folder.is_dir()]
 
@@ -21,12 +27,14 @@ def main(data_root):
             row = df.iloc[j]
             folder_name = folder_names[j]
 
-            if folder_name not in ["RESULT", "PICTURES"]:
-                processing(row.img_before, folder_name, data_root_path)
-                processing(row.img_after, folder_name, data_root_path)
-        else:
-            error_message = "Folder is empty."
-            log_error(folder_name, error_message)
+            if folder_name :
+
+                processing(row.img_before, folder_name, data_root_path,out_folder)
+                processing(row.img_after, folder_name, data_root_path,out_folder)
+            else:
+                error_message = "Folder is empty."
+                log_error(folder_name, error_message)
+
 
 
 def save_pics(grid_final, img, folder_name, data_root_path):
@@ -69,7 +77,7 @@ def log_error(folder_name, error_message):
         f.write(error_message + "\n")
 
 
-def processing(img, folder_name, data_root_path):
+def processing(img, folder_name, data_root_path,out_folder):
     """
     Process image data and save results.
 
@@ -111,10 +119,10 @@ def processing(img, folder_name, data_root_path):
 
             grid_final = ip.add_points_parts(
                 average_distance, grid_remove_points, N_ROWS, PARTS)
-            save_pics(grid_final, img, folder_name, data_root_path)
+            save_pics(grid_final, img, folder_name, out_folder)
             # Write the results to Excel files
             ip.calculate_distance_and_save_small(
-                grid_final, folder_name, data_root_path)
+                grid_final, folder_name, out_folder)
     except Exception as e:
         error_message = f"Error processing {folder_name}: {str(e)}"
         log_error(folder_name, error_message)
