@@ -519,8 +519,8 @@ def find_origin_start(img, x_start, x_end, y_start, y_end):
 
 def find_origin_middle(img, x_start, x_end, y_start, y_end):
 
-    # region where the middle points is most of the time located
-    filtered_centers_m = np.array([])
+    
+    filtered_centers_m = np.array([])# region where the middle points is most of the time located
 
     cropped = img[y_start:y_end, x_start:x_end]
 
