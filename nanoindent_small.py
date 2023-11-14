@@ -29,8 +29,8 @@ def main(data_root):
 
             if folder_name :
 
-                processing(row.img_before, folder_name, data_root_path,out_folder)
-                processing(row.img_after, folder_name, data_root_path,out_folder)
+                processing(row.img_before, folder_name,out_folder)
+                processing(row.img_after, folder_name,out_folder)
             else:
                 error_message = "Folder is empty."
                 log_error(folder_name, error_message)
@@ -77,7 +77,7 @@ def log_error(folder_name, error_message):
         f.write(error_message + "\n")
 
 
-def processing(img, folder_name, data_root_path,out_folder):
+def processing(img, folder_name,out_folder,minimum_detected_points=0.75):
     """
     Process image data and save results.
 
@@ -110,7 +110,7 @@ def processing(img, folder_name, data_root_path,out_folder):
 
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
         n_rows, n_columns, _ = grid_remove_points.shape
-        if nan_count >= ((n_rows * n_columns) / 4 * 3):
+        if nan_count >= ((n_rows * n_columns) / minimum_detected_points):
             error_message = "Not enough points detected."
             log_error(folder_name, error_message)
         else:
@@ -120,7 +120,7 @@ def processing(img, folder_name, data_root_path,out_folder):
             grid_final = ip.add_points_parts(
                 average_distance, grid_remove_points, N_ROWS, PARTS)
             save_pics(grid_final, img, folder_name, out_folder)
-            # Write the results to Excel files
+            # Write the results to CSV files
             ip.calculate_distance_and_save_small(
                 grid_final, folder_name, out_folder)
     except Exception as e:
