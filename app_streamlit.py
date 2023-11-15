@@ -15,14 +15,14 @@ if start_button:
     if selected_folder:
         script_path = 'main.py'
         if version == 'Small':
-            command = f'python "{script_path}" "{selected_folder}" --x1-thr 40 --x-threshold 4 --n-rows 7 --n-parts 2 --version S'
+            args = ["python", script_path, selected_folder, "--x1-thr", "40", "--x-threshold", "4", "--n-rows", "7", "--n-parts", "2", "--version", "S"]
         elif version == 'Big':
-            command = f'python "{script_path}" "{selected_folder}" --x1-thr 40 --x-threshold 4 --n-rows 11 --n-parts 3 --version M'
+            args = ["python", script_path, selected_folder, "--x1-thr", "40", "--x-threshold", "4", "--n-rows", "11", "--n-parts", "3", "--version", "M"]
         else:
             st.error("Choose version of the program.")
 
         try:
-            subprocess.run(command, shell=True, check=True)
+            subprocess.run(args, check=True)
         except subprocess.CalledProcessError as e:
             st.error(f"Error executing the program: {e}")
 
