@@ -10,11 +10,12 @@ import numpy as np
 import logging
 import traceback
 
+
 def main(data_root, config):
     data_root_path = pathlib.Path(data_root)
     out_folder = data_root_path.parent / "OUT"
     os.makedirs(out_folder, exist_ok=True)
-    df = indentation_reader.read_data(data_root_path,out_folder)
+    df = indentation_reader.read_data(data_root_path, out_folder)
     folder_names = [
         folder.name for folder in data_root_path.iterdir() if folder.is_dir()]
 
@@ -98,7 +99,7 @@ def processing(img, folder_name, out_folder, config, minimum_detected_points=0.7
         N_ROWS = config['N_ROWS']
         PARTS = config['PARTS']
         VERSION = config['VERSION']
-        
+
         # coordinates x1,x2,y1,y2 of the region where the first point is located
         filtered_centers1_original = ip.find_origin_start(
             img, 450, 720, 500, 820)
@@ -107,7 +108,7 @@ def processing(img, folder_name, out_folder, config, minimum_detected_points=0.7
         if VERSION == 'M':
             filtered_centers_m_original = ip.find_origin_middle(
                 img, 450, 720, 14500, 14800)
-        elif  VERSION == 'S':   
+        elif VERSION == 'S':
             filtered_centers_m_original = [0, 0]
         grid_manual = ip.manual_grid(
             filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original, N_ROWS, PARTS)
@@ -123,7 +124,7 @@ def processing(img, folder_name, out_folder, config, minimum_detected_points=0.7
             X1_THRESHOLD=config['X1_THRESHOLD'],
             N_ROWS=config['N_ROWS'],
             PARTS=config['PARTS']
-        )  # X_THRESHOLD = 4, X1_THRESHOLD = 40, constants set based on observation for better effectivity
+        )
 
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
         n_rows, n_columns, _ = grid_remove_points.shape
@@ -136,7 +137,7 @@ def processing(img, folder_name, out_folder, config, minimum_detected_points=0.7
 
             grid_final = ip.add_points_parts(
                 average_distance, grid_remove_points, N_ROWS, PARTS)
-            
+
             if VERSION == 'S':
                 save_pics(grid_final, img, folder_name, out_folder)
                 # Write the results to CSV files
@@ -165,9 +166,8 @@ def processing(img, folder_name, out_folder, config, minimum_detected_points=0.7
 
     except Exception as e:
         error_message = f"Error processing {folder_name}: {str(e)}"
-        traceback.print_exc()  
+        traceback.print_exc()
         log_error(folder_name, error_message, out_folder)
-        # print(error_message)
 
 
 if __name__ == "__main__":
@@ -176,15 +176,15 @@ if __name__ == "__main__":
     parser.add_argument("data_root", type=str,
                         help="Path to the data root directory")
     parser.add_argument("--x1-thr", dest='x1_thr', type=int,
-                        default=40, help="X1_THRESHOLD value")
+                        default=40, help="filter points based on the x-coordinate deviation from the least square method")
     parser.add_argument("--x-threshold", dest='x_threshold',
-                        type=int, default=4, help="X_THRESHOLD value")
+                        type=int, default=4, help="filter points based on the x-coordinate deviation from the median")
     parser.add_argument("--n-rows", dest='n_rows', type=int,
-                        default=11, help="N_ROWS value")
+                        default=11, help="number of rows in one part")
     parser.add_argument("--n-parts", dest='n_parts',
-                        type=int, default=3, help="PARTS value")
+                        type=int, default=3, help="number of parts that the grid will be split")
     parser.add_argument("--version", dest='version',
-                        type=str, default='M',choices=['M', 'S'], help="M=middle, S=Small")
+                        type=str, default='M', choices=['M', 'S'], help="M=middle, S=Small")
 
     args = parser.parse_args()
     config = {
