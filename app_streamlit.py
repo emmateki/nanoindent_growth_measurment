@@ -31,4 +31,4 @@ if st.sidebar.button("Help"):
     st.sidebar.markdown("## Help Window")
     st.sidebar.markdown("This is the help window content.")
 
-st.write("Main content goes here...")
+st.write("Tutorial.")
