@@ -1,34 +1,102 @@
 import streamlit as st
-import subprocess
+import main  # Import your main script
 
 st.set_page_config(page_title="Grid growth Desktop App", layout="wide")
 
-st.title("Grid Analyzer")
 
-selected_folder = st.sidebar.text_input(
-    "Choose a folder with data:", key="-IN2-")
+def main_section():
 
-version = st.sidebar.selectbox("Version", ['Small', 'Big'], key="-VERSION-")
-start_button = st.sidebar.button("Start")
+    st.title("Grid Analyzer")
+    selected_folder = st.text_input(
+        "Choose a folder with data:", key="-IN2-")
+    input_version = st.selectbox(
+        "Version", ['Small', 'Big'], index=0, key="version")
 
-if start_button:
-    if selected_folder:
-        script_path = 'main.py'
-        if version == 'Small':
-            args = ["python", script_path, selected_folder, "--x1-thr", "40", "--x-threshold", "4", "--row-in-part", "7", "--n-parts", "2", "--version", "S"]
-        elif version == 'Big':
-            args = ["python", script_path, selected_folder, "--x1-thr", "40", "--x-threshold", "4", "--row-in-part", "11", "--n-parts", "3", "--version", "M"]
+    if input_version == 'Small':
+        default_x1_thr = 40
+        default_x_thr = 4
+        default_n_rows = 7
+        input_n_parts = 2
+    elif input_version == 'Big':
+        default_x1_thr = 40
+        default_x_thr = 4
+        default_n_rows = 11
+        input_n_parts = 3
+
+    with st.expander("Advanced Settings", expanded=False):
+        input_x1_thr = st.number_input(
+            "X1 Threshold", min_value=1, value=default_x1_thr, key="x1_thr")
+        input_x_thr = st.number_input(
+            "X Threshold", min_value=1, value=default_x_thr, key="x_thr")
+        input_n_rows = st.number_input(
+            "Number of Rows", min_value=1, max_value=30, value=default_n_rows, key="n_rows")
+        input_n_parts = st.number_input(
+            "Number of Parts", value=input_n_parts, key="n_parts", disabled=True)
+
+    start_button = st.button("Start",type="primary")
+
+    if start_button:
+        if selected_folder:
+            try:
+                config = {
+                    'x1_treshold': input_x1_thr,
+                    'x_treshold': input_x_thr,
+                    'row_in_part': input_n_rows,
+                    'parts': input_n_parts,
+
+                    'version': 'S' if input_version == 'Small' else 'M',
+                }
+
+                main.main(selected_folder, config)
+
+            except Exception as e:
+                st.error(f"Error processing data: {e}")
         else:
-            st.error("Choose version of the program.")
+            st.error("Please select data folder.")
 
-        try:
-            subprocess.run(args, check=True)
-        except subprocess.CalledProcessError as e:
-            st.error(f"Error executing the program: {e}")
 
-st.sidebar.markdown("---")
-if st.sidebar.button("Help"):
-    st.sidebar.markdown("## Help Window")
-    st.sidebar.markdown("This is the help window content.")
+def manual_section():
+    st.title("User Manual")
+    st.write(
+        """
 
-st.write("Tutorial.")
+        #### Main Section:
+
+        The **Grid Analyzer** application allows you to analyze grid data from pictures and track their growth. For more information about the code and compatible data, visit the [Github repository](https://github.com/emmateki/nanoindent_growth_measurment).
+
+        Follow these steps to get started:
+
+        1. **Choose a Folder with Data:**
+           - Enter the path to the folder containing your data in the provided text input field. Ideally, the folder should contain subfolders with two .png pictures each, representing the data.
+
+        2. **Select Version:**
+            - Choose between 'Small' and 'Big' versions using the dropdown menu. This determines the settings for the analysis.
+
+        3. **Advanced Settings:**
+            - Expand the settings to fine-tune the analysis parameters. For basic usage, there's no need to modify these parameters. Here are the adjustable settings:
+                - **X1 Threshold:** Filters points based on the x-coordinate deviation from the least square method.
+                - **X Threshold:** Filters points based on the x-coordinate deviation from the median.
+                - **Number of Rows:** Determine the number of rows in individual parts.
+                - **Number of Parts:** Displays the number of parts based on the selected version. This setting is disabled as it is predefined based on the chosen version.
+
+        4. **Start:**
+            - Click the "Start" button to initiate the analysis with the provided configurations.
+
+        5. **Output:**
+            - Your OUT folder will be created in the parent folder of the data folder. In the OUT folder, you will find three subfolders:
+                - **PICTURES:** Contains your original data pictures with the red detected grid. These pictures should be used for reviewing the quality of the result.
+                - **RESULTS:** Contains .csv files with data. Additional information about the data can be found [here](https://github.com/emmateki/nanoindent_growth_measurment).
+                - **ERROR:** Contains a .log file where you can find errors that occurred during the run.
+
+        ---
+        """
+    )
+
+
+selection = st.sidebar.selectbox(
+    "Navigation", ["Main", "User Manual"])
+
+if selection == "Main":
+    main_section()
+elif selection == "User Manual":
+    manual_section()

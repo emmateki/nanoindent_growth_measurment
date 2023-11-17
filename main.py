@@ -113,6 +113,8 @@ def processing(img, folder_name, out_folder, config, is_after,minimum_detected_p
                 # Write the results to CSV files
                 ip.calculate_distance_and_save_big(
                     grid_final_final, folder_name, out_folder)
+                n_rows, n_columns, _ = grid_final_final.shape
+                print (n_rows)
             else:
                 error_message = "Wrong version."
                 folder_name = "Version"
