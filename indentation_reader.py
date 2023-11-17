@@ -3,8 +3,7 @@ import numpy as np
 import imageio
 from tqdm.auto import tqdm
 import pandas as pd
-import main
-
+from shared import log_error
 
 def read_data(data_root,out_folder):
     """
@@ -33,7 +32,7 @@ def _maybe_img(img_path,out_folder):
     if not img_path.exists():
         error_message = "Image is not in good format."
         folder_name = "Image"
-        main.log_error(folder_name, error_message, out_folder)
+        log_error(folder_name, error_message, out_folder)
     img = imageio.imread(img_path)
     if len(img.shape) == 2:
         return img
@@ -42,7 +41,7 @@ def _maybe_img(img_path,out_folder):
     else:
         error_message = "Unexpected image shape"
         folder_name = "Image"
-        main.log_error(folder_name, error_message, out_folder)
+        log_error(folder_name, error_message, out_folder)
         return None
 
 
@@ -55,7 +54,7 @@ def _read_record(dir_path,out_folder):
     if not img_after_candidates:
         error_message = "No matching img."
         folder_name = "Image"
-        main.log_error(folder_name, error_message, out_folder)
+        log_error(folder_name, error_message, out_folder)
       
     img_after_path = img_after_candidates[0]
 

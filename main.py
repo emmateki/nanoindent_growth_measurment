@@ -1,13 +1,11 @@
 import pathlib
 import indentation_reader as indentation_reader
-from tqdm.auto import tqdm
 import image_processing as ip
 import argparse
 import os
 import numpy as np
-import logging
 import traceback
-
+from shared import log_error
 
 def main(data_root, config, out_folder=None):
     data_root_path = pathlib.Path(data_root)
@@ -36,32 +34,7 @@ def main(data_root, config, out_folder=None):
                 log_error(folder_name, error_message, out_folder)
 
 
-def configure_logger(folder_name, out_folder):
-    log_folder = out_folder/"ERROR"
-    os.makedirs(log_folder, exist_ok=True)
-
-    log_file = os.path.join(log_folder, f"{folder_name}_error.log")
-
-    logging.basicConfig(
-        filename=log_file,
-        level=logging.ERROR,
-        format="%(asctime)s - %(levelname)s - %(message)s"
-    )
-
-
-def log_error(folder_name, error_message, out_folder):
-    """
-    Log an error message using the configured logger.
-
-    Args:
-        folder_name: Name of the folder where the error occurred.
-        error_message: Error message to log.
-    """
-    configure_logger(folder_name, out_folder)
-    logging.error(error_message)
-
-
-def processing(img, folder_name, out_folder, config, minimum_detected_points=0.75):
+def processing(img, folder_name, out_folder, config, is_after,minimum_detected_points=0.75):
     """
     Process image data and save results.
 
@@ -73,9 +46,9 @@ def processing(img, folder_name, out_folder, config, minimum_detected_points=0.7
     """
 
     try:
-        n_rows = config['N_ROWS']
-        parts = config['PARTS']
-        varsion = config['VERSION']
+        n_rows = config['n_rows']
+        parts = config['parts']
+        varsion = config['varsion']
 
         # coordinates x1,x2,y1,y2 of the region where the first point is located
         filtered_centers1_original = ip.find_origin_start(
