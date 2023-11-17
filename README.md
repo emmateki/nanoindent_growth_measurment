@@ -4,7 +4,7 @@ This Python project is dedicated to image processing, specifically analyzing pai
 * Big version - detect all points in three columns 
 * Small version - detect first and last seven rows in three columns
 
-Here si example of data then detected points in small version of the app and then detected all the points in big version. \
+Here si example of data with detected points in small version of the app and all the points in big version. \
 ![intro](https://github.com/emmateki/nanoindent_growth_measurment/assets/116107969/6fb1c6e8-26ad-450a-becc-a26fc8696ffc)
 
 ## Table of Contents
