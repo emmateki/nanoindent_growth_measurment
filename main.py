@@ -9,9 +9,13 @@ import logging
 import traceback
 
 
-def main(data_root, config):
+def main(data_root, config, out_folder=None):
     data_root_path = pathlib.Path(data_root)
-    out_folder = data_root_path.parent / "OUT"
+    if out_folder is None:
+        out_folder = data_root_path.parent / "OUT"
+    else:
+        out_folder = pathlib.Path(out_folder)
+  
     os.makedirs(out_folder, exist_ok=True)
     df = indentation_reader.read_data(data_root_path, out_folder)
     folder_names = [
