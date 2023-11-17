@@ -13,11 +13,13 @@ def main(data_root, config, out_folder=None):
         out_folder = data_root_path.parent / "OUT"
     else:
         out_folder = pathlib.Path(out_folder)
-  
+    
     os.makedirs(out_folder, exist_ok=True)
-    df = indentation_reader.read_data(data_root_path, out_folder)
+    df = indentation_reader.read_data(data_root_path)
     folder_names = [
         folder.name for folder in data_root_path.iterdir() if folder.is_dir()]
+    
+    log_error.configure_logger(out_folder)
 
     for j in range(len(df)):
         if not df.empty:
@@ -31,7 +33,7 @@ def main(data_root, config, out_folder=None):
             else:
                 error_message = "Folder is empty."
                 folder_name = "empty"
-                log_error(folder_name, error_message, out_folder)
+                log_error(folder_name, error_message)
 
 
 def processing(img, folder_name, out_folder, config, is_after,minimum_detected_points=0.75):
@@ -80,7 +82,7 @@ def processing(img, folder_name, out_folder, config, is_after,minimum_detected_p
         n_rows, n_columns, _ = grid_remove_points.shape
         if nan_count >= ((n_rows * n_columns) / minimum_detected_points):
             error_message = "Not enough points detected."
-            log_error(folder_name, error_message, out_folder)
+            log_error(folder_name, error_message)
         else:
             average_distance = ip.calculate_average_vertical_distance(
                 grid_remove_points, n_rows)
@@ -112,12 +114,12 @@ def processing(img, folder_name, out_folder, config, is_after,minimum_detected_p
             else:
                 error_message = "Wrong version."
                 folder_name = "Version"
-                log_error(folder_name, error_message, out_folder)
+                log_error(folder_name, error_message)
 
     except Exception as e:
         error_message = f"Error processing {folder_name}: {str(e)}"
         traceback.print_exc()
-        log_error(folder_name, error_message, out_folder)
+        log_error(folder_name, error_message)
 
 
 if __name__ == "__main__":

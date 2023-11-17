@@ -1,11 +1,10 @@
-from chardet.universaldetector import UniversalDetector
 import numpy as np
 import imageio
 from tqdm.auto import tqdm
 import pandas as pd
 from shared import log_error
 
-def read_data(data_root,out_folder):
+def read_data(data_root):
     """
     The method reads data in the following structure
 
@@ -20,19 +19,19 @@ def read_data(data_root,out_folder):
     img_after - (img_after.jpg)
     """
     data = [
-        _read_record(dir_path,out_folder)
+        _read_record(dir_path)
         for dir_path in tqdm(list(data_root.glob('*')))
     ]
     cols = ['img_before', 'img_after']
     return pd.DataFrame(data, columns=cols)
 
 
-def _maybe_img(img_path,out_folder):
+def _maybe_img(img_path):
     
     if not img_path.exists():
         error_message = "Image is not in good format."
         folder_name = "Image"
-        log_error(folder_name, error_message, out_folder)
+        log_error(folder_name, error_message)
     img = imageio.imread(img_path)
     if len(img.shape) == 2:
         return img
@@ -41,7 +40,7 @@ def _maybe_img(img_path,out_folder):
     else:
         error_message = "Unexpected image shape"
         folder_name = "Image"
-        log_error(folder_name, error_message, out_folder)
+        log_error(folder_name, error_message)
         return None
 
 
@@ -54,7 +53,7 @@ def _read_record(dir_path,out_folder):
     if not img_after_candidates:
         error_message = "No matching img."
         folder_name = "Image"
-        log_error(folder_name, error_message, out_folder)
+        log_error(folder_name, error_message)
       
     img_after_path = img_after_candidates[0]
 
