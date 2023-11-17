@@ -1,8 +1,6 @@
 import pathlib
 import indentation_reader as indentation_reader
 from tqdm.auto import tqdm
-import matplotlib.pyplot as plt
-import visualization as visualization
 import image_processing as ip
 import argparse
 import os
@@ -25,38 +23,13 @@ def main(data_root, config):
             folder_name = folder_names[j]
 
             if folder_name:
-
-                processing(row.img_before, folder_name, out_folder, config)
-                processing(row.img_after, folder_name, out_folder, config)
+                
+                processing(row.img_before, folder_name, out_folder, config,is_after=False)
+                processing(row.img_after, folder_name, out_folder, config,is_after= True)
             else:
                 error_message = "Folder is empty."
                 folder_name = "empty"
                 log_error(folder_name, error_message, out_folder)
-
-
-def save_pics(grid_final, img, folder_name, data_root_path):
-    """
-    Save processed images to a specified folder.
-
-    Args:
-        grid_final: Processed image data.
-        img: Original image data.
-        folder_name: Name of the folder.
-        data_root_path: Path to the root data directory.
-    """
-    pictures_folder = data_root_path / "PICTURES"
-    os.makedirs(pictures_folder, exist_ok=True)
-
-    os.chdir(pictures_folder)
-    plt.ioff()
-    visualization.draw_grid(img, grid_final)
-
-    if os.path.exists(f"{folder_name}.png"):
-        plt.savefig(f"{folder_name}_after.png", format="png")
-    else:
-        plt.savefig(f"{folder_name}.png", format="png")
-
-    plt.close()
 
 
 def configure_logger(folder_name, out_folder):
@@ -96,22 +69,22 @@ def processing(img, folder_name, out_folder, config, minimum_detected_points=0.7
     """
 
     try:
-        N_ROWS = config['N_ROWS']
-        PARTS = config['PARTS']
-        VERSION = config['VERSION']
+        n_rows = config['N_ROWS']
+        parts = config['PARTS']
+        varsion = config['VERSION']
 
         # coordinates x1,x2,y1,y2 of the region where the first point is located
         filtered_centers1_original = ip.find_origin_start(
             img, 450, 720, 500, 820)
         filtered_centers_last_original = ip.find_origin_last(
             img, 400, 700, 28320, 28650)
-        if VERSION == 'M':
+        if varsion == 'M':
             filtered_centers_m_original = ip.find_origin_middle(
                 img, 450, 720, 14500, 14800)
-        elif VERSION == 'S':
+        elif varsion == 'S':
             filtered_centers_m_original = [0, 0]
         grid_manual = ip.manual_grid(
-            filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original, N_ROWS, PARTS)
+            filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original, n_rows, parts)
 
         grid_w_real_points = ip.create_new_grid(img, grid_manual)
 
@@ -120,10 +93,10 @@ def processing(img, folder_name, out_folder, config, minimum_detected_points=0.7
         # Remove points based on least square fit and calculate linear dependency, equations, and coefficients
         grid_remove_points = ip.process_grid(
             rearranged_grid,
-            X_THRESHOLD=config['X_THRESHOLD'],
-            X1_THRESHOLD=config['X1_THRESHOLD'],
-            N_ROWS=config['N_ROWS'],
-            PARTS=config['PARTS']
+            x_treshold=config['x_treshold'],
+            x1_treshold=config['x1_treshold'],
+            n_rows=config['n_rows'],
+            parts=config['parts']
         )
 
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
@@ -133,28 +106,28 @@ def processing(img, folder_name, out_folder, config, minimum_detected_points=0.7
             log_error(folder_name, error_message, out_folder)
         else:
             average_distance = ip.calculate_average_vertical_distance(
-                grid_remove_points, N_ROWS)
+                grid_remove_points, n_rows)
 
             grid_final = ip.add_points_parts(
-                average_distance, grid_remove_points, N_ROWS, PARTS)
+                average_distance, grid_remove_points, n_rows, parts)
 
-            if VERSION == 'S':
-                save_pics(grid_final, img, folder_name, out_folder)
+            if varsion == 'S':
+                ip.save_pics(grid_final, img, folder_name, out_folder,is_after)
                 # Write the results to CSV files
                 ip.calculate_distance_and_save_small(
                     grid_final, folder_name, out_folder)
-            elif VERSION == 'M':
-                grid_bigger_empty = ip.empty_grid(grid_final, N_ROWS)
+            elif varsion == 'M':
+                grid_bigger_empty = ip.empty_grid(grid_final, n_rows)
 
                 grid_bigger_empty = ip.add_points_full_grid(
-                    average_distance, grid_bigger_empty, N_ROWS)
+                    average_distance, grid_bigger_empty, n_rows)
 
                 grid_bigger_full = ip.create_new_grid(img, grid_bigger_empty)
 
                 grid_final_final = ip.add_points_full_grid(
-                    average_distance, grid_bigger_full, N_ROWS)
+                    average_distance, grid_bigger_full, n_rows)
 
-                save_pics(grid_final_final, img, folder_name, out_folder)
+                ip.save_pics(grid_final_final, img, folder_name, out_folder,is_after)
 
                 # Write the results to CSV files
                 ip.calculate_distance_and_save_big(
@@ -188,11 +161,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     config = {
-        'X1_THRESHOLD': args.x1_thr,
-        'X_THRESHOLD': args.x_threshold,
-        'N_ROWS': args.n_rows,
-        'PARTS': args.n_parts,
-        'VERSION': args.version,
+        'x1_treshold': args.x1_thr,
+        'x_treshold': args.x_threshold,
+        'n_rows': args.n_rows,
+        'parts': args.n_parts,
+        'version': args.version,
     }
 
     main(args.data_root, config)

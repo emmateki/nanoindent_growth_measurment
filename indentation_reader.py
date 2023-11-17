@@ -5,13 +5,6 @@ from tqdm.auto import tqdm
 import pandas as pd
 import main
 
-"""
-Credit to Jaroslav Knotek for the following functions:
-- read_data
-- _maybe_img
-- _read_record
-- _read_indent_centers
-"""
 
 def read_data(data_root,out_folder):
     """
@@ -50,6 +43,7 @@ def _maybe_img(img_path,out_folder):
         error_message = "Unexpected image shape"
         folder_name = "Image"
         main.log_error(folder_name, error_message, out_folder)
+        return None
 
 
 
@@ -69,34 +63,3 @@ def _read_record(dir_path,out_folder):
     img_after = _maybe_img(img_after_path, out_folder)
 
     return img_before, img_after
-
-
-def _read_indent_centers(filename):
-    # HACK: Input data have different text encoding. The goal is to reliably turn decimal numbers from Czech notation "1,2 " to English notation 1.2 for further parsing.
-    detector = UniversalDetector()
-    detector.reset()
-    for line in open(filename, 'rb'):
-        detector.feed(line)
-        if detector.done:
-            break
-    detector.close()
-
-    with open(filename, encoding=detector.result['encoding']) as f:
-        lines_raw = f.readlines()
-        lines = [line.replace(',', '.').strip().split('\t')
-                 for line in lines_raw]
-
-    cnts = [len(x) for x in lines]
-
-    d = {}
-    for c in cnts:
-        d[c] = d.get(c, 0) + 1
-
-    idxs = [i for i, x in enumerate(lines) if len(x) == 1]
-    indent_centers = np.array(lines[idxs[2]+1:idxs[3]]).astype(float)
-
-    expected = 282
-    # {np.array(lines_raw)[idxs]}
-    assert len(
-        indent_centers) == expected, f"Invalid number of centers. {len(indent_centers)}!= {expected}. {d}, {filename}"
-    return indent_centers

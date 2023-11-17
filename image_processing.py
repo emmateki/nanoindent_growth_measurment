@@ -5,6 +5,8 @@ from tqdm.auto import tqdm
 import os
 import numpy as np
 from scipy.ndimage import gaussian_filter1d
+import matplotlib.pyplot as plt
+import visualization as visualization
 
 # set by previous observation
 AVERAGE_DISTANCE_VERTICAL = 302
@@ -177,27 +179,27 @@ def rearrange_grid(grid_w_real_points):
     return rearranged_grid
 
 
-def process_grid(rearranged_grid, X_THRESHOLD, X1_THRESHOLD, N_ROWS, PARTS):
+def process_grid(rearranged_grid, x_treshold, x1_treshold, n_rows, parts):
     """
     Process a rearranged grid to remove outliers using the least square method.
 
     Parameters:
     - rearranged_grid (ndarray): A 3D array representing the rearranged grid with real points.
-    - X_THRESHOLD: The threshold for filtering points based on x-coordinate deviation from the median.
-    - X1_THRESHOLD: The threshold for filtering points based on x1_distance, used in the least square method.
-    - N_ROWS: Number of rows in one PART
-    - PARTS: Number of parts to process in the grid.
+    - x_treshold: The threshold for filtering points based on x-coordinate deviation from the median.
+    - x1_treshold: The threshold for filtering points based on x1_distance, used in the least square method.
+    - n_rows: Number of rows in one PART
+    - parts: Number of parts to process in the grid.
 
     Returns:
     - ndarray: Grid with outliers removed.
     - ndarray: Coefficients of linear regression for each column in the grid.
     """
     n_rows, n_columns, _ = rearranged_grid.shape
-    coefficients = np.zeros((PARTS, n_columns, 2))
-    for i, col in [(i, col) for i in range(PARTS) for col in range(n_columns)]:
+    coefficients = np.zeros((parts, n_columns, 2))
+    for i, col in [(i, col) for i in range(parts) for col in range(n_columns)]:
 
         x_coordinates, y_coordinates = get_coordinates(
-            rearranged_grid, i, col, N_ROWS, PARTS)
+            rearranged_grid, i, col, n_rows, parts)
 
         valid_indices = ~np.isnan(x_coordinates)
         x_valid, y_valid = x_coordinates[valid_indices], y_coordinates[valid_indices]
@@ -205,7 +207,7 @@ def process_grid(rearranged_grid, X_THRESHOLD, X1_THRESHOLD, N_ROWS, PARTS):
         x_median = np.median(x_valid)
 
         # Filter points based on x_threshold
-        valid_mask = np.abs(x_valid - x_median) <= X_THRESHOLD
+        valid_mask = np.abs(x_valid - x_median) <= x_treshold
         x_filtered, y_filtered = x_valid[valid_mask], y_valid[valid_mask]
         # Perform linear regression
         A = np.vstack([x_filtered, np.ones(len(x_filtered))]).T
@@ -215,13 +217,13 @@ def process_grid(rearranged_grid, X_THRESHOLD, X1_THRESHOLD, N_ROWS, PARTS):
         coefficients[i, col, 1] = c
 
         update_grid(rearranged_grid, x_coordinates, y_coordinates,
-                    valid_indices, X1_THRESHOLD, m, c, i, N_ROWS, col)
+                    valid_indices, x1_treshold, m, c, i, n_rows, col)
 
     return rearranged_grid
 
 
-def get_coordinates(grid, part, col, n_rows, PARTS):
-    if PARTS == 2:
+def get_coordinates(grid, part, col, n_rows, parts):
+    if parts == 2:
         part = 1
     row_start = part * n_rows
     row_end = row_start + n_rows
@@ -245,17 +247,17 @@ def update_grid(grid, x_coordinates, y_coordinates, valid_indices, X1_THRESHOLD,
     return grid
 
 
-def calculate_average_vertical_distance(grid_remove_points, N_ROWS):
+def calculate_average_vertical_distance(grid_remove_points, n_rows):
     n_rows, n_columns, _ = grid_remove_points.shape
     total_distance = 0
     count = 0
     for col in range(0, n_columns):
 
-        y_coordinates = grid_remove_points[:N_ROWS, col, 1]
+        y_coordinates = grid_remove_points[:n_rows, col, 1]
         valid_indices = ~np.isnan(y_coordinates)
 
         if np.sum(valid_indices) >= 2:
-            for row in range(1, N_ROWS):
+            for row in range(1, n_rows):
                 if valid_indices[row - 1] and valid_indices[row]:
                     distance = abs(y_coordinates[row] - y_coordinates[row - 1])
                     total_distance += distance
@@ -268,12 +270,12 @@ def calculate_average_vertical_distance(grid_remove_points, N_ROWS):
 
     for col in range(n_columns):
 
-        y_coordinates = grid_remove_points[N_ROWS:N_ROWS*2, col, 1]
+        y_coordinates = grid_remove_points[n_rows:n_rows*2, col, 1]
         valid_indices = ~np.isnan(y_coordinates)
 
         # Check if there are at least two valid neighboring points in the column
         if np.sum(valid_indices) >= 2:
-            for row in range(1, N_ROWS):
+            for row in range(1, n_rows):
                 if valid_indices[row - 1] and valid_indices[row]:
                     distance = abs(y_coordinates[row] - y_coordinates[row - 1])
                     total_distance += distance
@@ -548,10 +550,10 @@ def find_origin_middle(img, x_start, x_end, y_start, y_end):
     return filtered_centers_m_original
 
 
-def manual_grid(filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original, N_ROWS, parts):
+def manual_grid(filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original, n_rows, parts):
     grid_manual = []
 
-    for i, j in [(i, j) for i in range(1) for j in range(N_ROWS)]:
+    for i, j in [(i, j) for i in range(1) for j in range(n_rows)]:
         col_x = filtered_centers1_original[0, 0] + sum(COLUMN_DISTANCE[:i])
         point_y = filtered_centers1_original[0, 1] + j * POINT_DISTANCE[i]
         left_x = col_x - POINT_DISTANCE[i]
@@ -561,7 +563,7 @@ def manual_grid(filtered_centers_m_original, filtered_centers1_original, filtere
             [(left_x, point_y), (middle_x, point_y), (right_x, point_y)])
 
     if parts == 3:
-        for i, j in [(i, j) for i in range(1) for j in range(N_ROWS)]:
+        for i, j in [(i, j) for i in range(1) for j in range(n_rows)]:
             col_x = filtered_centers_m_original[0,
                                                 0] + sum(COLUMN_DISTANCE[:i])
             point_y = filtered_centers_m_original[0,
@@ -573,12 +575,12 @@ def manual_grid(filtered_centers_m_original, filtered_centers1_original, filtere
             grid_manual.append(
                 [(left_x, point_y), (middle_x, point_y), (right_x, point_y)])
 
-    for i, j in [(i, j) for i in range(1) for j in range(N_ROWS)]:
+    for i, j in [(i, j) for i in range(1) for j in range(n_rows)]:
         col_x = filtered_centers_last_original[0,
                                                0] + sum(COLUMN_DISTANCE[:i])
 
         point_y = filtered_centers_last_original[0,
-                                                 1] - (N_ROWS-1-j) * POINT_DISTANCE[i]
+                                                 1] - (n_rows-1-j) * POINT_DISTANCE[i]
         left_x = col_x - POINT_DISTANCE[i]
         middle_x = col_x
         right_x = col_x + POINT_DISTANCE[i]
@@ -651,7 +653,7 @@ def calculate_x_coordinate(y, m, c):
     return (y - c) / m
 
 
-def empty_grid(grid_final, N_ROWS):
+def empty_grid(grid_final, n_rows):
     """
     Expand the input grid with empty rows to fill gaps between existing rows.
 
@@ -667,18 +669,18 @@ def empty_grid(grid_final, N_ROWS):
     - ndarray: The expanded grid with empty rows added to fill the gaps.
     """
 
-    diff = grid_final[N_ROWS, 0, 1]-grid_final[N_ROWS-1, 0, 1]
+    diff = grid_final[n_rows, 0, 1]-grid_final[n_rows-1, 0, 1]
     no_of_rows = +round(diff / AVERAGE_DISTANCE_VERTICAL - 1)
 
-    diff2 = grid_final[N_ROWS*2, 0, 1]-grid_final[N_ROWS*2-1, 0, 1]
+    diff2 = grid_final[n_rows*2, 0, 1]-grid_final[n_rows*2-1, 0, 1]
 
     no_of_rows2 = round(diff2 / AVERAGE_DISTANCE_VERTICAL - 1)
 
     nan_grid = np.full((no_of_rows, 3, 2), np.nan)
     nan_grid2 = np.full((no_of_rows2, 3, 2), np.nan)
-    grid_final_bigger = np.insert(grid_final, N_ROWS, nan_grid, axis=0)
+    grid_final_bigger = np.insert(grid_final, n_rows, nan_grid, axis=0)
     grid_final_bigger = np.insert(
-        grid_final_bigger, N_ROWS*2+no_of_rows, nan_grid2, axis=0)
+        grid_final_bigger, n_rows*2+no_of_rows, nan_grid2, axis=0)
     return grid_final_bigger
 
 
@@ -769,3 +771,45 @@ def add_points_full_grid(average_distance, grid_bigger_empty, N_ROWS):
             grid_bigger_empty[row, col, 0] = x_median
 
     return grid_bigger_empty
+
+
+def save_pics(grid_final, img, folder_name, data_root_path, is_after):
+    """
+    Save processed images to a specified folder.
+
+    Args:
+        grid_final: Processed image data.
+        img: Original image data.
+        folder_name: Name of the folder.
+        data_root_path: Path to the root data directory.
+    """
+    pictures_folder = data_root_path / "PICTURES"
+    os.makedirs(pictures_folder, exist_ok=True)
+
+    os.chdir(pictures_folder)
+    plt.ioff()
+    visualization.draw_grid(img, grid_final)
+
+    file_name = f"{folder_name}_after.png" if is_after else f"{folder_name}.png"
+
+    if os.path.exists(file_name):
+        file_name = new_file_name(file_name)
+
+    plt.savefig(file_name, format="png")
+    plt.close()
+
+def new_file_name(file_name):
+    """
+    Increment new file name if it already exists.
+
+    Args:
+        file_name: Name of the file.
+
+    Returns:
+        Incremented file name.
+    """
+    base_name, extension = os.path.splitext(file_name)
+    index = 1
+    while os.path.exists(f"{base_name}_{index}{extension}"):
+        index += 1
+    return f"{base_name}_{index}{extension}"
