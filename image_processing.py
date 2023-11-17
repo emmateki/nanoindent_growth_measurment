@@ -326,7 +326,7 @@ def calculate_distance_and_save_small(new_grid1, folder_name, data_root_path):
         lengths_in_mm.append(length / 60 * (0.2))
 
     data_after = {
-        "Points": ["Col_0", "Col_1", "Col_2", "Differnce"],
+        "Points": ["Col_0", "Col_1", "Col_2", "Difference"],
         "2_94": [lengths_in_mm[0], lengths_in_mm[3], lengths_in_mm[6], None],
         "95_187": [lengths_in_mm[1], lengths_in_mm[4], lengths_in_mm[7], None],
         "190_282": [lengths_in_mm[2], lengths_in_mm[5], lengths_in_mm[8], None],
