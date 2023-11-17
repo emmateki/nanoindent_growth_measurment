@@ -1,4 +1,3 @@
-import numpy as np
 import imageio
 from tqdm.auto import tqdm
 import pandas as pd

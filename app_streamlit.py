@@ -1,5 +1,5 @@
 import streamlit as st
-import main  # Import your main script
+import main 
 
 st.set_page_config(page_title="Grid growth Desktop App", layout="wide")
 
