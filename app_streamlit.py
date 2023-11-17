@@ -91,8 +91,6 @@ def manual_section():
         ---
         """
     )
-
-
 selection = st.sidebar.selectbox(
     "Navigation", ["Main", "User Manual"])
 

@@ -1,16 +1,26 @@
 # nanoindent_growth_measurements
 
-This Python project is dedicated to image processing, specifically analyzing pairs of images—usually "before" and "after" images—to quantify changes in a grid-like structure. It calculates the elongation of grid elements between two images and assesses the differences in width.
-Here si example of data then detected points in small version of the app and then detected all the points in big version.
+This Python project is dedicated to image processing, specifically analyzing pairs of images—usually "before" and "after" images—to quantify changes in a grid-like structure. It calculates the elongation of grid elements between two images and assesses the differences in width. It has two versions: 
+* Big version - detect all points in three columns 
+* Small version - detect first and last seven rows in three columns
+
+Here si example of data then detected points in small version of the app and then detected all the points in big version. \
 ![intro](https://github.com/emmateki/nanoindent_growth_measurment/assets/116107969/6fb1c6e8-26ad-450a-becc-a26fc8696ffc)
 
 ## Table of Contents
 
 - [nanoindent\_growth\_measurements](#nanoindent_growth_measurements)
   - [Table of Contents](#table-of-contents)
+    - [About](#about)
     - [Installation](#installation)
     - [Run the UI](#run-the-ui)
     - [Usage](#usage)
+
+### About
+This program operates as follows:  \
+In the **small version**, it identifies the first and last points in the second column. Utilizing the average distance constant, it manually computes a grid encompassing the first and last seven rows. The program searches around these points within the manual grid. When a point is located, it is stored in an array. Empty spaces in the grid are determined through linear dependency across columns and the y-median within rows. 
+
+The **big version** functions similarly, initially identifying the first, middle, and last points within an eleven-row span. It then searches for actual points around the manual grid, subsequently filling in missing points within empty regions using calculations involving medians and linear dependencies. This approach enables the detection of the entire grid. 
 
 ### Installation
 
