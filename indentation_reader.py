@@ -45,7 +45,7 @@ def _maybe_img(img_path):
 
 
 
-def _read_record(dir_path,out_folder):
+def _read_record(dir_path):
     img_before_path = dir_path / f"{dir_path.stem}.jpg"
 
     img_after_candidates = list(dir_path.glob(f"{dir_path.stem}_*.jpg"))
@@ -57,7 +57,7 @@ def _read_record(dir_path,out_folder):
       
     img_after_path = img_after_candidates[0]
 
-    img_before = _maybe_img(img_before_path, out_folder)
-    img_after = _maybe_img(img_after_path, out_folder)
+    img_before = _maybe_img(img_before_path)
+    img_after = _maybe_img(img_after_path)
 
     return img_before, img_after

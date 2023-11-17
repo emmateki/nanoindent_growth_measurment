@@ -6,6 +6,7 @@ import os
 import numpy as np
 import traceback
 from shared import log_error
+from shared import configure_logger
 
 def main(data_root, config, out_folder=None):
     data_root_path = pathlib.Path(data_root)
@@ -15,11 +16,10 @@ def main(data_root, config, out_folder=None):
         out_folder = pathlib.Path(out_folder)
     
     os.makedirs(out_folder, exist_ok=True)
+    configure_logger(out_folder)
     df = indentation_reader.read_data(data_root_path)
     folder_names = [
         folder.name for folder in data_root_path.iterdir() if folder.is_dir()]
-    
-    log_error.configure_logger(out_folder)
 
     for j in range(len(df)):
         if not df.empty:
@@ -48,22 +48,22 @@ def processing(img, folder_name, out_folder, config, is_after,minimum_detected_p
     """
 
     try:
-        n_rows = config['n_rows']
+        row_in_part = config['row_in_part']
         parts = config['parts']
-        varsion = config['varsion']
+        version = config['version']
 
         # coordinates x1,x2,y1,y2 of the region where the first point is located
         filtered_centers1_original = ip.find_origin_start(
             img, 450, 720, 500, 820)
         filtered_centers_last_original = ip.find_origin_last(
             img, 400, 700, 28320, 28650)
-        if varsion == 'M':
+        if version == 'M':
             filtered_centers_m_original = ip.find_origin_middle(
                 img, 450, 720, 14500, 14800)
-        elif varsion == 'S':
+        elif version == 'S':
             filtered_centers_m_original = [0, 0]
         grid_manual = ip.manual_grid(
-            filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original, n_rows, parts)
+            filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original, row_in_part, parts)
 
         grid_w_real_points = ip.create_new_grid(img, grid_manual)
 
@@ -74,8 +74,9 @@ def processing(img, folder_name, out_folder, config, is_after,minimum_detected_p
             rearranged_grid,
             x_treshold=config['x_treshold'],
             x1_treshold=config['x1_treshold'],
-            n_rows=config['n_rows'],
+            row_in_part=config['row_in_part'],
             parts=config['parts']
+
         )
 
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
@@ -85,26 +86,27 @@ def processing(img, folder_name, out_folder, config, is_after,minimum_detected_p
             log_error(folder_name, error_message)
         else:
             average_distance = ip.calculate_average_vertical_distance(
-                grid_remove_points, n_rows)
-
+                grid_remove_points, row_in_part)
+            
             grid_final = ip.add_points_parts(
-                average_distance, grid_remove_points, n_rows, parts)
+                average_distance, grid_remove_points, row_in_part, parts)
 
-            if varsion == 'S':
+            if version == 'S':
                 ip.save_pics(grid_final, img, folder_name, out_folder,is_after)
                 # Write the results to CSV files
                 ip.calculate_distance_and_save_small(
                     grid_final, folder_name, out_folder)
-            elif varsion == 'M':
-                grid_bigger_empty = ip.empty_grid(grid_final, n_rows)
+                
+            elif version == 'M':
+                grid_bigger_empty = ip.empty_grid(grid_final, row_in_part)
 
                 grid_bigger_empty = ip.add_points_full_grid(
-                    average_distance, grid_bigger_empty, n_rows)
+                    average_distance, grid_bigger_empty, row_in_part)
 
                 grid_bigger_full = ip.create_new_grid(img, grid_bigger_empty)
 
                 grid_final_final = ip.add_points_full_grid(
-                    average_distance, grid_bigger_full, n_rows)
+                    average_distance, grid_bigger_full, row_in_part)
 
                 ip.save_pics(grid_final_final, img, folder_name, out_folder,is_after)
 
@@ -131,7 +133,7 @@ if __name__ == "__main__":
                         default=40, help="filter points based on the x-coordinate deviation from the least square method")
     parser.add_argument("--x-threshold", dest='x_threshold',
                         type=int, default=4, help="filter points based on the x-coordinate deviation from the median")
-    parser.add_argument("--n-rows", dest='n_rows', type=int,
+    parser.add_argument("--row-in-part", dest='row_in_part', type=int,
                         default=11, help="number of rows in one part")
     parser.add_argument("--n-parts", dest='n_parts',
                         type=int, default=3, help="number of parts that the grid will be split")
@@ -142,7 +144,7 @@ if __name__ == "__main__":
     config = {
         'x1_treshold': args.x1_thr,
         'x_treshold': args.x_threshold,
-        'n_rows': args.n_rows,
+        'row_in_part': args.row_in_part,
         'parts': args.n_parts,
         'version': args.version,
     }
