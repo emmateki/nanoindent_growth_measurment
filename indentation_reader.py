@@ -36,7 +36,7 @@ def _maybe_img(img_path):
         error_message = f"Unexpected image shape: {str(e)}"
         folder_name = "Image"
         log_error(folder_name, error_message)
-        raise Exception("Unexpected image shape")
+        raise Exception("Unexpected image shape in folder {dir_path.name}.")
 
 
 def _read_record(dir_path):
