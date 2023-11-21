@@ -25,20 +25,18 @@ def read_data(data_root):
     cols = ['img_before', 'img_after']
     return pd.DataFrame(data, columns=cols)
 
-
 def _maybe_img(img_path):
-    
-    img = imageio.imread(img_path)
-    if len(img.shape) == 2:
-        return img
-    elif len(img.shape) == 3:
-        return img[:, :, 0]
-    else:
-        error_message = "Unexpected image shape"
+    try:
+        img = imageio.imread(img_path)
+        if len(img.shape) == 2:
+            return img
+        elif len(img.shape) == 3:
+            return img[:, :, 0]
+    except Exception as e:
+        error_message = f"Unexpected image shape: {str(e)}"
         folder_name = "Image"
         log_error(folder_name, error_message)
         raise Exception("Unexpected image shape")
-
 
 
 def _read_record(dir_path):
