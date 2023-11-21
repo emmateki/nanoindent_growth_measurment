@@ -7,4 +7,3 @@ tqdm
 matplotlib
 pandas
 scipy
-opencv-python
