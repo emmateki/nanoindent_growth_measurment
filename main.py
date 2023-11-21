@@ -52,16 +52,19 @@ def processing(img, folder_name, out_folder, config, is_after,minimum_detected_p
         parts = config['parts']
         version = config['version']
 
-        # coordinates x1,x2,y1,y2 of the region where the first point is located
         filtered_centers1_original = ip.find_origin_start(
-            img, 450, 720, 500, 820)
+        img, config['filter_x1'], config['filter_x2'], config['filter_y1'], config['filter_y2'])
         filtered_centers_last_original = ip.find_origin_last(
-            img, 400, 700, 28320, 28650)
+        img, config['last_x1'], config['last_x2'], config['last_y1'], config['last_y2'])
+
+
+        # coordinates x1,x2,y1,y2 of the region where the first point is located
         if version == 'M':
             filtered_centers_m_original = ip.find_origin_middle(
-                img, 450, 720, 14500, 14800)
+            img, config['middle_x1'], config['middle_x2'], config['middle_y1'], config['middle_y2'])
         elif version == 'S':
             filtered_centers_m_original = [0, 0]
+
         grid_manual = ip.manual_grid(
             filtered_centers_m_original, filtered_centers1_original, filtered_centers_last_original, row_in_part, parts)
 
@@ -141,13 +144,26 @@ if __name__ == "__main__":
     parser.add_argument("--version", dest='version',
                         type=str, default='M', choices=['M', 'S'], help="M=middle, S=Small")
 
+
     args = parser.parse_args()
     config = {
-        'x1_treshold': args.x1_thr,
-        'x_treshold': args.x_threshold,
+        'x1_thr': args.x1_thr,
+        'x_threshold': args.x_threshold,
         'row_in_part': args.row_in_part,
         'parts': args.n_parts,
         'version': args.version,
+        'filter_x1': 450,
+        'filter_x2': 720,
+        'filter_y1': 500,
+        'filter_y2': 820,
+        'last_x1': 400,
+        'last_x2': 700,
+        'last_y1': 28320,
+        'last_y2': 28650,
+        'middle_x1': 450,
+        'middle_x2': 720,
+        'middle_y1': 14500,
+        'middle_y2': 14800,
     }
 
     main(args.data_root, config)
