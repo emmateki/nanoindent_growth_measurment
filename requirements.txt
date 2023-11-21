@@ -7,3 +7,4 @@ tqdm
 matplotlib
 pandas
 scipy
+cv2
