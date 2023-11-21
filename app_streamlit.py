@@ -46,7 +46,6 @@ def main_section():
 
                     'version': 'S' if input_version == 'Small' else 'M',
                 }
-
                 main.main(selected_folder, config)
 
             except Exception as e:
@@ -59,7 +58,6 @@ def manual_section():
     st.title("User Manual")
     st.write(
         """
-
         #### Main Section:
 
         The **Grid Analyzer** application allows you to analyze grid data from pictures and track their growth. For more information about the code and compatible data, visit the [Github repository](https://github.com/emmateki/nanoindent_growth_measurment).

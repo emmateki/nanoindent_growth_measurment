@@ -239,7 +239,10 @@ def update_grid(grid, x_coordinates, y_coordinates, valid_indices, x1_treshold, 
     for row in range(row_start, row_end):
 
         if valid_indices[row - row_start]:
-            expected_x = (y_coordinates[row - row_start] - c) / m
+            if m == 0:
+                expected_x = 0
+            else:
+                expected_x = (y_coordinates[row - row_start] - c) / m
             x1_distance = np.abs(x_coordinates[row - row_start] - expected_x)
 
             if x1_distance > x1_treshold:
@@ -281,8 +284,11 @@ def calculate_average_vertical_distance(grid_remove_points, row_in_part):
                     distance = abs(y_coordinates[row] - y_coordinates[row - 1])
                     total_distance += distance
                     count += 1
+
     if count > 0:
         average1 = total_distance/count
+    else :
+         return COLUMN_DISTANCE [1]
 
     return ((average+average1)/2)
 
