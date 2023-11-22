@@ -14,6 +14,7 @@ AVERAGE_DISTANCE_VERTICAL = 302
 COLUMN_DISTANCE = [300.52, 300.55]
 POINT_DISTANCE = [302.14, 302.1, 302.14]
 
+
 """
 Credit to Jaroslav Knotek for the following functions:
 - _subtract_background
@@ -26,7 +27,6 @@ Credit to Jaroslav Knotek for the following functions:
 - _suppress_non_grid_artifacts
 
 """
-
 
 def get_indent_mask(img, threshold_h, threshold_l, close_size=41):
     # Apply preprocessing to highlight indents

@@ -5,8 +5,8 @@ import argparse
 import os
 import numpy as np
 import traceback
-from shared import log_error
-from shared import configure_logger
+import logging
+
 
 def main(data_root, config, out_folder=None):
     data_root_path = pathlib.Path(data_root)
@@ -16,25 +16,42 @@ def main(data_root, config, out_folder=None):
         out_folder = pathlib.Path(out_folder)
     
     os.makedirs(out_folder, exist_ok=True)
-    configure_logger(out_folder)
-    df = indentation_reader.read_data(data_root_path)
+
+    log_folder = out_folder / "ERROR"
+    log_file_path = log_folder / "error.log"
+
+    if not log_file_path.exists():
+        log_file_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_file_path.open('w') as file:
+            file.write("Error log initialized\n")
+
+    logging.basicConfig(
+        level=logging.WARNING,
+        filename=log_file_path,
+        format='%(asctime)s - %(levelname)s - %(message)s'
+    )
+    df = None
+    try:
+        df = indentation_reader.read_data(data_root_path)
+    except Exception as e:
+            logging.error(f"{e}")
+            raise Exception(f"{e}")
+
+        
     folder_names = [
         folder.name for folder in data_root_path.iterdir() if folder.is_dir()]
+    if df is not None:
+        for j in range(len(df)):
+            if not df.empty:
+                row = df.iloc[j]
+                folder_name = folder_names[j]
 
-    for j in range(len(df)):
-        if not df.empty:
-            row = df.iloc[j]
-            folder_name = folder_names[j]
-
-            if folder_name:
-                
-                processing(row.img_before, folder_name, out_folder, config,is_after=False)
-                processing(row.img_after, folder_name, out_folder, config,is_after= True)
-            else:
-                error_message = "Folder is empty."
-                folder_name = "empty"
-                log_error(folder_name, error_message)
-
+                if folder_name:
+                    
+                    processing(row.img_before, folder_name, out_folder, config,is_after=False)
+                    processing(row.img_after, folder_name, out_folder, config,is_after= True)
+                else:
+                    logging.error (f"[{folder_name}] - Folder is empty.")
 
 def processing(img, folder_name, out_folder, config, is_after,minimum_detected_points=0.75):
     """
@@ -57,7 +74,6 @@ def processing(img, folder_name, out_folder, config, is_after,minimum_detected_p
         filtered_centers_last_original = ip.find_origin_last(
         img, config['last_x1'], config['last_x2'], config['last_y1'], config['last_y2'])
 
-
         # coordinates x1,x2,y1,y2 of the region where the first point is located
         if version == 'M':
             filtered_centers_m_original = ip.find_origin_middle(
@@ -79,7 +95,6 @@ def processing(img, folder_name, out_folder, config, is_after,minimum_detected_p
             x1_treshold=config['x1_treshold'],
             row_in_part=config['row_in_part'],
             parts=config['parts']
-
         )
 
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
@@ -118,16 +133,12 @@ def processing(img, folder_name, out_folder, config, is_after,minimum_detected_p
                     grid_final_final, folder_name, out_folder)
                 n_rows, n_columns, _ = grid_final_final.shape
             else:
-                error_message = "Wrong version."
-                folder_name = "Version"
-                log_error(folder_name, error_message)
+                logging.error ("Wrong version.")
 
     except Exception as e:
-        error_message = f"Error processing {folder_name}: {str(e)}"
         traceback.print_exc()
-        log_error(folder_name, error_message)
-
-
+        logging.error (f"Error processing {folder_name}: {str(e)}")
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Process data in a specified directory")
@@ -143,7 +154,6 @@ if __name__ == "__main__":
                         type=int, default=3, help="number of parts that the grid will be split")
     parser.add_argument("--version", dest='version',
                         type=str, default='M', choices=['M', 'S'], help="M=middle, S=Small")
-
 
     args = parser.parse_args()
     config = {
