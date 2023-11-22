@@ -1,10 +1,10 @@
 streamlit
 pathlib
-argparse
 numpy
+argparse
 imageio
 tqdm
 matplotlib
 pandas
 scipy
-opencv-python-headless
+
