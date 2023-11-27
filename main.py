@@ -30,7 +30,7 @@ def main(data_root, config, out_folder=None):
     )
     df = None
     try:
-        df = indentation_reader.read_data(data_root_path)  
+        df = indentation_reader.read_data(data_root_path)
     except Exception as e:
         logging.error(f"{e}")
         raise Exception(f"{e}")
@@ -38,14 +38,11 @@ def main(data_root, config, out_folder=None):
     for index, row in df.iterrows():
         folder_name = row.folder_name
         if folder_name:
-            processing(
-                row.img_before, folder_name, out_folder, config, is_after=False
-            )
-            processing(
-                row.img_after, folder_name, out_folder, config, is_after=True
-            )
+            processing(row.img_before, folder_name, out_folder, config, is_after=False)
+            processing(row.img_after, folder_name, out_folder, config, is_after=True)
         else:
             logging.error(f"[{folder_name}] - Folder is empty.")
+
 
 def processing(
     img, folder_name, out_folder, config, is_after, minimum_detected_points=0.75
@@ -116,8 +113,12 @@ def processing(
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
         n_rows, n_columns, _ = grid_remove_points.shape
         if nan_count >= ((n_rows * n_columns) / minimum_detected_points):
-            logging.error(f"Error processing {folder_name}: Not enough points detected.")
-            raise Exception(f"Error processing {folder_name}: Not enough points detected.")
+            logging.error(
+                f"Error processing {folder_name}: Not enough points detected."
+            )
+            raise Exception(
+                f"Error processing {folder_name}: Not enough points detected."
+            )
 
         else:
             average_distance = ip.calculate_average_vertical_distance(
@@ -164,22 +165,47 @@ def processing(
         logging.error(f"Error processing {folder_name}: {str(e)}")
 
 
-        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Process data in a specified directory")
-    parser.add_argument("data_root", type=str,
-                        help="Path to the data root directory")
-    parser.add_argument("--x1-thr", dest='x1_thr', type=int,
-                        default=40, help="filter points based on the x-coordinate deviation from the least square method")
-    parser.add_argument("--x-threshold", dest='x_threshold',
-                        type=int, default=4, help="filter points based on the x-coordinate deviation from the median")
-    parser.add_argument("--row-in-part", dest='row_in_part', type=int,
-                        default=11, help="number of rows in one part")
-    parser.add_argument("--n-parts", dest='n_parts',
-                        type=int, default=3, help="number of parts that the grid will be split")
-    parser.add_argument("--version", dest='version',
-                        type=str, default='M', choices=['M', 'S'], help="M=middle, S=Small")
+        description="Process data in a specified directory"
+    )
+    parser.add_argument("data_root", type=str, help="Path to the data root directory")
+    parser.add_argument(
+        "--x1-thr",
+        dest="x1_thr",
+        type=int,
+        default=40,
+        help="filter points based on the x-coordinate deviation from the least square method",
+    )
+    parser.add_argument(
+        "--x-threshold",
+        dest="x_threshold",
+        type=int,
+        default=4,
+        help="filter points based on the x-coordinate deviation from the median",
+    )
+    parser.add_argument(
+        "--row-in-part",
+        dest="row_in_part",
+        type=int,
+        default=11,
+        help="number of rows in one part",
+    )
+    parser.add_argument(
+        "--n-parts",
+        dest="n_parts",
+        type=int,
+        default=3,
+        help="number of parts that the grid will be split",
+    )
+    parser.add_argument(
+        "--version",
+        dest="version",
+        type=str,
+        default="M",
+        choices=["M", "S"],
+        help="M=middle, S=Small",
+    )
 
     args = parser.parse_args()
     default_config = cfg.get_default_config()
@@ -191,5 +217,5 @@ if __name__ == "__main__":
         "version": args.version,
     }
 
-    config = default_config| user_config
+    config = default_config | user_config
     main(args.data_root, config)

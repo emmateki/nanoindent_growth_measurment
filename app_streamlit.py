@@ -44,13 +44,15 @@ def main_section():
     if start_button:
         if selected_folder:
             try:
-                user_config = {'x1_thr': input_x1_thr,
-                                    'x_treshold': input_x_thr,
-                                    'row_in_part': input_n_rows,
-                                    'parts': input_n_parts,
-                                    'version': 'S' if input_version == 'Small' else 'M'}
+                user_config = {
+                    "x1_thr": input_x1_thr,
+                    "x_treshold": input_x_thr,
+                    "row_in_part": input_n_rows,
+                    "parts": input_n_parts,
+                    "version": "S" if input_version == "Small" else "M",
+                }
                 default_config = cfg.get_default_config()
-                config = default_config| user_config
+                config = default_config | user_config
                 main.main(selected_folder, config)
 
             except Exception as e:
