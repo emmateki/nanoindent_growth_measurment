@@ -1,5 +1,6 @@
 import streamlit as st
 import main
+import config as cfg
 
 st.set_page_config(page_title="Grid growth Desktop App", layout="wide")
 
@@ -43,25 +44,13 @@ def main_section():
     if start_button:
         if selected_folder:
             try:
-                config = {
-                    "x1_treshold": input_x1_thr,
-                    "x_treshold": input_x_thr,
-                    "row_in_part": input_n_rows,
-                    "parts": input_n_parts,
-                    "version": "S" if input_version == "Small" else "M",
-                    "filter_x1": 450,
-                    "filter_x2": 720,
-                    "filter_y1": 500,
-                    "filter_y2": 820,
-                    "last_x1": 400,
-                    "last_x2": 700,
-                    "last_y1": 28320,
-                    "last_y2": 28650,
-                    "middle_x1": 450,
-                    "middle_x2": 720,
-                    "middle_y1": 14500,
-                    "middle_y2": 14800,
-                }
+                user_config = {'x1_treshold': input_x1_thr,
+                                    'x_treshold': input_x_thr,
+                                    'row_in_part': input_n_rows,
+                                    'parts': input_n_parts,
+                                    'version': 'S' if input_version == 'Small' else 'M'}
+                default_config = cfg.get_default_config()
+                config = default_config| user_config
                 main.main(selected_folder, config)
 
             except Exception as e:

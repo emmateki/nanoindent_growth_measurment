@@ -6,6 +6,7 @@ import os
 import numpy as np
 import traceback
 import logging
+import config 
 
 
 def main(data_root, config, out_folder=None):
@@ -115,8 +116,9 @@ def processing(
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
         n_rows, n_columns, _ = grid_remove_points.shape
         if nan_count >= ((n_rows * n_columns) / minimum_detected_points):
-            error_message = "Not enough points detected."
-            log_error(folder_name, error_message)
+            logging.error(f"Error processing {folder_name}: Not enough points detected.")
+            raise Exception(f"Error processing {folder_name}: Not enough points detected.")
+
         else:
             average_distance = ip.calculate_average_vertical_distance(
                 grid_remove_points, row_in_part
@@ -154,7 +156,8 @@ def processing(
                 )
                 n_rows, n_columns, _ = grid_final_final.shape
             else:
-                logging.error("Wrong version.")
+                logging.error(f"Error processing {folder_name}: Wrong version.")
+                raise Exception(f"Error processing {folder_name}: Wrong version.")
 
     except Exception as e:
         traceback.print_exc()
@@ -162,66 +165,24 @@ def processing(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Process data in a specified directory"
-    )
-    parser.add_argument("data_root", type=str, help="Path to the data root directory")
-    parser.add_argument(
-        "--x1-thr",
-        dest="x1_thr",
-        type=int,
-        default=40,
-        help="filter points based on the x-coordinate deviation from the least square method",
-    )
-    parser.add_argument(
-        "--x-threshold",
-        dest="x_threshold",
-        type=int,
-        default=4,
-        help="filter points based on the x-coordinate deviation from the median",
-    )
-    parser.add_argument(
-        "--row-in-part",
-        dest="row_in_part",
-        type=int,
-        default=11,
-        help="number of rows in one part",
-    )
-    parser.add_argument(
-        "--n-parts",
-        dest="n_parts",
-        type=int,
-        default=3,
-        help="number of parts that the grid will be split",
-    )
-    parser.add_argument(
-        "--version",
-        dest="version",
-        type=str,
-        default="M",
-        choices=["M", "S"],
-        help="M=middle, S=Small",
-    )
-
-    args = parser.parse_args()
-    config = {
-        "x1_thr": args.x1_thr,
-        "x_threshold": args.x_threshold,
-        "row_in_part": args.row_in_part,
-        "parts": args.n_parts,
-        "version": args.version,
-        "filter_x1": 450,
-        "filter_x2": 720,
-        "filter_y1": 500,
-        "filter_y2": 820,
-        "last_x1": 400,
-        "last_x2": 700,
-        "last_y1": 28320,
-        "last_y2": 28650,
-        "middle_x1": 450,
-        "middle_x2": 720,
-        "middle_y1": 14500,
-        "middle_y2": 14800,
+    default_config = config.get_default_config()
+    args = {
+        "x1_thr": {"value": 40, "help": "filter points based on the x-coordinate deviation from the least square method"},
+        "x_threshold": {"value": 4, "help": "filter points based on the x-coordinate deviation from the median"},
+        "row_in_part": {"value": 11, "help": "number of rows in one part"},
+        "n_parts": {"value": 3, "help": "number of parts that the grid will be split"},
+        "version": {"value": "M", "help": "description of version parameter - S/M"}
     }
 
+    user_config = {
+        "x1_thr": args.get("x1_thr", default_config["x1_thr"]),
+        "x_threshold": args.get("x_threshold", default_config["x_threshold"]),
+        "row_in_part": args.get("row_in_part", default_config["row_in_part"]),
+        "parts": args.get("n_parts", default_config["parts"]),
+        "version": args.get("version", default_config["version"])
+    }
+
+    config = {**default_config, **user_config}
+
     main(args.data_root, config)
+
