@@ -46,7 +46,7 @@ def main_section():
             try:
                 user_config = {
                     "x1_thr": input_x1_thr,
-                    "x_treshold": input_x_thr,
+                    "x_threshold": input_x_thr,
                     "row_in_part": input_n_rows,
                     "parts": input_n_parts,
                     "version": "S" if input_version == "Small" else "M",
