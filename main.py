@@ -6,7 +6,7 @@ import os
 import numpy as np
 import traceback
 import logging
-import config 
+import config as cfg
 
 
 def main(data_root, config, out_folder=None):
@@ -107,8 +107,8 @@ def processing(
         # Remove points based on least square fit and calculate linear dependency, equations, and coefficients
         grid_remove_points = ip.process_grid(
             rearranged_grid,
-            x_treshold=config["x_treshold"],
-            x1_treshold=config["x1_treshold"],
+            x_treshold=config["x_threshold"],
+            x1_treshold=config["x1_thr"],
             row_in_part=config["row_in_part"],
             parts=config["parts"],
         )
@@ -164,25 +164,32 @@ def processing(
         logging.error(f"Error processing {folder_name}: {str(e)}")
 
 
+        
 if __name__ == "__main__":
-    default_config = config.get_default_config()
-    args = {
-        "x1_thr": {"value": 40, "help": "filter points based on the x-coordinate deviation from the least square method"},
-        "x_threshold": {"value": 4, "help": "filter points based on the x-coordinate deviation from the median"},
-        "row_in_part": {"value": 11, "help": "number of rows in one part"},
-        "n_parts": {"value": 3, "help": "number of parts that the grid will be split"},
-        "version": {"value": "M", "help": "description of version parameter - S/M"}
-    }
+    parser = argparse.ArgumentParser(
+        description="Process data in a specified directory")
+    parser.add_argument("data_root", type=str,
+                        help="Path to the data root directory")
+    parser.add_argument("--x1-thr", dest='x1_thr', type=int,
+                        default=40, help="filter points based on the x-coordinate deviation from the least square method")
+    parser.add_argument("--x-threshold", dest='x_threshold',
+                        type=int, default=4, help="filter points based on the x-coordinate deviation from the median")
+    parser.add_argument("--row-in-part", dest='row_in_part', type=int,
+                        default=11, help="number of rows in one part")
+    parser.add_argument("--n-parts", dest='n_parts',
+                        type=int, default=3, help="number of parts that the grid will be split")
+    parser.add_argument("--version", dest='version',
+                        type=str, default='M', choices=['M', 'S'], help="M=middle, S=Small")
 
+    args = parser.parse_args()
+    default_config = cfg.get_default_config()
     user_config = {
-        "x1_thr": args.get("x1_thr", default_config["x1_thr"]),
-        "x_threshold": args.get("x_threshold", default_config["x_threshold"]),
-        "row_in_part": args.get("row_in_part", default_config["row_in_part"]),
-        "parts": args.get("n_parts", default_config["parts"]),
-        "version": args.get("version", default_config["version"])
+        "x1_thr": args.x1_thr,
+        "x_threshold": args.x_threshold,
+        "row_in_part": args.row_in_part,
+        "parts": args.n_parts,
+        "version": args.version,
     }
 
-    config = {**default_config, **user_config}
-
+    config = default_config| user_config
     main(args.data_root, config)
-
