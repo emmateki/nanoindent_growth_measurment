@@ -16,14 +16,8 @@ def main(data_root, config, out_folder=None):
         out_folder = pathlib.Path(out_folder)
     
     os.makedirs(out_folder, exist_ok=True)
-
-    log_folder = out_folder / "ERROR"
-    log_file_path = log_folder / "error.log"
-
-    if not log_file_path.exists():
-        log_file_path.parent.mkdir(parents=True, exist_ok=True)
-        with log_file_path.open('w') as file:
-            file.write("Error log initialized\n")
+    log_file_path = out_folder/"ERROR"/"error.log"
+    log_file_path.parent.mkdir(parents=True, exist_ok=True)
 
     logging.basicConfig(
         level=logging.WARNING,
@@ -34,8 +28,8 @@ def main(data_root, config, out_folder=None):
     try:
         df = indentation_reader.read_data(data_root_path)
     except Exception as e:
-            logging.error(f"{e}")
-            raise Exception(f"{e}")
+        logging.error(f"{e}")
+        raise Exception(f"{e}")
 
         
     folder_names = [
