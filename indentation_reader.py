@@ -1,12 +1,11 @@
 import imageio
 from tqdm.auto import tqdm
 import pandas as pd
-
+import pathlib
 
 def read_data(data_root):
     """
     The method reads data in the following structure
-
     dir1
     img.jpg
     img_*.jpg for example img_after.jpg
@@ -16,13 +15,17 @@ def read_data(data_root):
     returns:
     img_before - (img.jpg)
     img_after - (img_after.jpg)
+    folder_name - (name of the folder)
     """
-    data = [
-        _read_record(dir_path)
-        for dir_path in tqdm(list(data_root.glob('*')))
-    ]
-    cols = ['img_before', 'img_after']
+    data = []
+    for dir_path in tqdm(list(data_root.glob('*'))):
+        img_before, img_after = _read_record(dir_path)
+        folder_name = dir_path.name 
+        data.append([img_before, img_after, folder_name])
+
+    cols = ['img_before', 'img_after', 'folder_name']
     return pd.DataFrame(data, columns=cols)
+
 
 def _maybe_img(img_path):
     try:

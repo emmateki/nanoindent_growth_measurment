@@ -29,17 +29,13 @@ def main(data_root, config, out_folder=None):
     )
     df = None
     try:
-        df = indentation_reader.read_data(data_root_path)
+        df = indentation_reader.read_data(data_root_path)  
     except Exception as e:
         logging.error(f"{e}")
         raise Exception(f"{e}")
 
-    folder_names = [
-        folder.name for folder in data_root_path.iterdir() if folder.is_dir()
-    ]
-
     for index, row in df.iterrows():
-        folder_name = folder_names[index]
+        folder_name = row.folder_name
         if folder_name:
             processing(
                 row.img_before, folder_name, out_folder, config, is_after=False
@@ -49,7 +45,6 @@ def main(data_root, config, out_folder=None):
             )
         else:
             logging.error(f"[{folder_name}] - Folder is empty.")
-
 
 def processing(
     img, folder_name, out_folder, config, is_after, minimum_detected_points=0.75
