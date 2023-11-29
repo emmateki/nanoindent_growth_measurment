@@ -32,8 +32,8 @@ def main(data_root, config, out_folder=None):
     try:
         df = indentation_reader.read_data(data_root_path)
     except Exception as e:
-        logging.error(f"{e}")
-        raise Exception(f"{e}")
+        logging.error(f"Error processing {folder_name}:{e}")
+        raise 
 
     for index, row in df.iterrows():
         folder_name = row.folder_name
