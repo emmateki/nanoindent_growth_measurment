@@ -1,12 +1,13 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+.vscode
 *.py[cod]
 *$py.class
 *.ipynb
 # C extensions
 *.so
 *.png
-*.vscode
+
 *.json
 
 # Distribution / packaging
