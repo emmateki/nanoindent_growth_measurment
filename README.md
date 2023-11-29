@@ -39,13 +39,6 @@ conda activate growth_measurment
 streamlit run app_streamlit.py
 ```
 
-**Windows**
-
-
-to be added....
-# TODO
-
-
 ### Usage
 
 Using this app is straightforward. Start by opening the Streamlit application. Select the data folder and choose the required version. Click on 'Start' to initiate the process. Once completed, an 'OUT' folder will be generated in the parent directory of the data folder.
@@ -54,7 +47,7 @@ The 'OUT' folder contains:
 - Pictures illustrating the 'before' and 'after' states
 - Results in CSV format
 
-In case of any errors during processing, a `.log` file will be saved in the 'OUT' folder.
+In case of any errors during processing, a `.log` file will be saved in the 'ERROR' folder.
 
 The app also includes a user manual for more detailed information on the available options.
 
