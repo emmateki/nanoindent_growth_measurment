@@ -32,16 +32,13 @@ def main(data_root, config, out_folder=None):
     try:
         df = indentation_reader.read_data(data_root_path)
     except Exception as e:
-        logging.error(f"Error processing {folder_name}:{e}")
+        logging.error(f"{str(e)}")
         raise 
 
     for index, row in df.iterrows():
         folder_name = row.folder_name
-        if folder_name:
-            processing(row.img_before, folder_name, out_folder, config, is_after=False)
-            processing(row.img_after, folder_name, out_folder, config, is_after=True)
-        else:
-            logging.error(f"[{folder_name}] - Folder is empty.")
+        processing(row.img_before, folder_name, out_folder, config, is_after=False)
+        processing(row.img_after, folder_name, out_folder, config, is_after=True)
 
 
 def processing(
@@ -113,12 +110,8 @@ def processing(
         nan_count = np.isnan(grid_remove_points[:, :, 1]).sum()
         n_rows, n_columns, _ = grid_remove_points.shape
         if nan_count >= ((n_rows * n_columns) / minimum_detected_points):
-            logging.error(
-                f"Error processing {folder_name}: Not enough points detected."
-            )
-            raise Exception(
-                f"Error processing {folder_name}: Not enough points detected."
-            )
+            msg = "Not enough points detected." 
+            raise Exception(msg)
 
         else:
             average_distance = ip.calculate_average_vertical_distance(
@@ -156,9 +149,6 @@ def processing(
                     grid_final_final, folder_name, out_folder
                 )
                 n_rows, n_columns, _ = grid_final_final.shape
-            else:
-                logging.error(f"Error processing {folder_name}: Wrong version.")
-                raise Exception(f"Error processing {folder_name}: Wrong version.")
 
     except Exception as e:
         traceback.print_exc()
